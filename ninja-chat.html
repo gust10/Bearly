@@ -294,6 +294,7 @@
             micBtn.classList.remove('disconnected');
             micBtn.classList.add('listening');
             modeText.textContent = 'Listening...';
+            ipcRenderer.send('ninja-talking-state', 'listening');
           },
 
           onDisconnect: () => {
@@ -301,6 +302,7 @@
             micBtn.classList.add('disconnected');
             micBtn.classList.remove('listening', 'speaking');
             modeText.textContent = 'Disconnected';
+            ipcRenderer.send('ninja-talking-state', 'idle');
           },
 
           onMessage: (message) => {
@@ -322,10 +324,12 @@
               micBtn.classList.remove('listening');
               micBtn.classList.add('speaking');
               modeText.textContent = 'Ninja is speaking...';
+              ipcRenderer.send('ninja-talking-state', 'speaking');
             } else {
               micBtn.classList.remove('speaking');
               micBtn.classList.add('listening');
               modeText.textContent = 'Listening...';
+              ipcRenderer.send('ninja-talking-state', 'listening');
             }
           },
 
@@ -347,6 +351,7 @@
         await conversation.endSession();
         conversation = null;
       }
+      ipcRenderer.send('ninja-talking-state', 'idle');
       ipcRenderer.send('close-ninja-chat');
     });
 
@@ -355,6 +360,7 @@
         await conversation.endSession();
         conversation = null;
       }
+      ipcRenderer.send('ninja-talking-state', 'idle');
       ipcRenderer.send('close-ninja-chat');
     });
 

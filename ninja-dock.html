@@ -168,27 +168,34 @@
     }
   </style>
 </head>
-<body>
-  <div class="dock-ninja" id="dockNinja">
-    <div class="ninja-head"></div>
-    <div class="ninja-headband"></div>
-    <div class="ninja-eyes">
-      <div class="ninja-eye"></div>
-      <div class="ninja-eye"></div>
-    </div>
-    <div class="ninja-body"></div>
-    <div class="ninja-belt"></div>
-    <div class="ninja-arm-l"></div>
-    <div class="ninja-arm-r"></div>
-    <div class="ninja-leg-l"></div>
-    <div class="ninja-leg-r"></div>
-  </div>
+  <div class="dock-ninja" id="dockNinja" style="display: none;"></div>
+  <video id="idleVideo" src="mov/breathing.mov" loop muted autoplay style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 140px; height: 140px; object-fit: contain;"></video>
+  <video id="bearVideo" src="mov/talking-bear.mov" loop muted autoplay style="display: none; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 140px; height: 140px; object-fit: contain;"></video>
+  <video id="scratchVideo" src="mov/scratch-head.mov" loop muted autoplay style="display: none; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 140px; height: 140px; object-fit: contain;"></video>
 
   <script>
     const { ipcRenderer } = require('electron');
 
+    const bearVideo = document.getElementById('bearVideo');
+    const idleVideo = document.getElementById('idleVideo');
+    const scratchVideo = document.getElementById('scratchVideo');
+
     document.body.addEventListener('click', () => {
       ipcRenderer.send('open-ninja-chat');
+    });
+
+    ipcRenderer.on('ninja-state', (event, state) => {
+      idleVideo.style.display = 'none';
+      bearVideo.style.display = 'none';
+      scratchVideo.style.display = 'none';
+
+      if (state === 'speaking') {
+        bearVideo.style.display = 'block';
+      } else if (state === 'listening') {
+        scratchVideo.style.display = 'block';
+      } else { // idle
+        idleVideo.style.display = 'block';
+      }
     });
   </script>
 </body>
