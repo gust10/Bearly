@@ -755,6 +755,7 @@ function createWindow() {
           nodeIntegration: true,
           contextIsolation: false,
         },
+        icon: path.join(__dirname, 'mov/cover.png'),
       });
 
       blurWin.loadFile('blur-overlay.html');
