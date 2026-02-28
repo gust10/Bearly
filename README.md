@@ -11,7 +11,11 @@ A desktop study companion built with Electron. Combines Pomodoro timers, active 
 
 ## Showcase
 
-Demo videos from the app (Ninja assistant animations and feedback):
+Demo vide
+
+https://github.com/user-attachments/assets/52dec65b-2291-44c0-ae49-d8cbbf3c1e14
+
+os from the app (Ninja assistant animations and feedback):
 
 | | |
 |---|---|
@@ -20,7 +24,19 @@ Demo videos from the app (Ninja assistant animations and feedback):
 | **Thinking** | **Scratch head** |
 | [thinking-bear.mov](mov/thinking-bear.mov) | [scratch-head.mov](mov/scratch-head.mov) |
 | **Glasses** | **Confetti (Pomodoro done)** |
-| [glasses.mov](mov/glasses.mov) | [confetti.mov](mov/confetti.mov) |
+| [glasses.mov](mov/glasses.mov) |
+
+https://github.com/user-attachments/assets/89a540b0-e023-4328-8ced-29f656397c3b
+
+
+https://github.com/user-attachments/assets/bc3da227-f5d0-4b71-8170-08369bb8bfda
+
+
+https://github.com/user-attachments/assets/25ce9772-2f8a-4f03-be39-545e3fca450e
+
+
+
+ [confetti.mov](mov/confetti.mov) |
 
 ![Cover](mov/cover.png)
 
