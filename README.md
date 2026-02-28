@@ -1,13 +1,10 @@
 # studyyyy
 **Project Overview:**
-A desktop study companion built with Electron. Combines Pomodoro timers, active recall, flashcards, and an AI-powered "Ninja" assistant to help you study smarter.
+AI Study Buddy is a persistent desktop-based AI companion that remains visually present on top of a user’s document workspace. It functions as an interactive academic assistant and behavioral productivity system.
+ 
+Unlike traditional AI tools that operate as separate applications, this solution integrates directly into the study environment. The AI is accessible in real time while the user reads, writes, reviews, or studies.
 
-## Team Members
-* Kei Jonathan McCall-Pohl - Software Development
-* Maddalena Di Salvo - Software Development
-* Hyunsung Shin - Software Development
-* Prajitno Fiona Keira - Design
-* Yash Relekar - Design
+The core objective is to transform passive studying into an active, structured, and reflective learning process.
 
 ## Showcase
 
@@ -91,3 +88,10 @@ Distraction detection uses platform-specific APIs (PowerShell on Windows, AppleS
 ## License
 
 ISC
+
+## Team Members
+* Kei Jonathan McCall-Pohl - Software Development
+* Maddalena Di Salvo - Software Development
+* Hyunsung Shin - Software Development
+* Prajitno Fiona Keira - Design
+* Yash Relekar - Design
