@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Ninja</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      height: 100%;
+      background: transparent;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .dock-ninja {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80px;
+      height: 100px;
+    }
+
+    .ninja-head {
+      width: 50px;
+      height: 50px;
+      background: #2d2d2d;
+      border-radius: 50%;
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2;
+    }
+
+    .ninja-headband {
+      position: absolute;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 54px;
+      height: 10px;
+      background: #f87171;
+      border-radius: 3px;
+      z-index: 3;
+    }
+
+    .ninja-headband::after {
+      content: '';
+      position: absolute;
+      right: -12px;
+      top: 1px;
+      width: 14px;
+      height: 6px;
+      background: #f87171;
+      border-radius: 0 4px 4px 0;
+      transform: rotate(15deg);
+    }
+
+    .ninja-headband::before {
+      content: '';
+      position: absolute;
+      right: -18px;
+      top: 6px;
+      width: 12px;
+      height: 5px;
+      background: #ef4444;
+      border-radius: 0 4px 4px 0;
+      transform: rotate(25deg);
+    }
+
+    .ninja-eyes {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+      z-index: 4;
+    }
+
+    .ninja-eye {
+      width: 8px;
+      height: 6px;
+      background: white;
+      border-radius: 50%;
+      position: relative;
+    }
+
+    .ninja-eye::after {
+      content: '';
+      width: 4px;
+      height: 4px;
+      background: #1a1a1a;
+      border-radius: 50%;
+      position: absolute;
+      top: 1px;
+      left: 2px;
+    }
+
+    .ninja-body {
+      width: 36px;
+      height: 35px;
+      background: #2d2d2d;
+      border-radius: 8px 8px 6px 6px;
+      position: absolute;
+      top: 42px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1;
+    }
+
+    .ninja-belt {
+      position: absolute;
+      top: 58px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 38px;
+      height: 6px;
+      background: #8b5cf6;
+      border-radius: 2px;
+      z-index: 2;
+    }
+
+    .ninja-arm-l, .ninja-arm-r {
+      width: 10px;
+      height: 22px;
+      background: #2d2d2d;
+      border-radius: 5px;
+      position: absolute;
+      top: 46px;
+      z-index: 0;
+    }
+
+    .ninja-arm-l { left: 11px; transform: rotate(10deg); }
+    .ninja-arm-r {
+      right: 11px;
+      transform: rotate(-10deg);
+      animation: wave 1.5s ease-in-out infinite;
+    }
+
+    @keyframes wave {
+      0%, 100% { transform: rotate(-10deg); }
+      50% { transform: rotate(-30deg); }
+    }
+
+    .ninja-leg-l, .ninja-leg-r {
+      width: 12px;
+      height: 18px;
+      background: #2d2d2d;
+      border-radius: 4px 4px 6px 6px;
+      position: absolute;
+      top: 72px;
+      z-index: 0;
+    }
+
+    .ninja-leg-l { left: 24px; }
+    .ninja-leg-r { right: 24px; }
+
+    /* Idle bounce */
+    .dock-ninja {
+      animation: idle-bounce 3s ease-in-out infinite;
+    }
+
+    @keyframes idle-bounce {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50% { transform: translateX(-50%) translateY(-3px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="dock-ninja" id="dockNinja">
+    <div class="ninja-head"></div>
+    <div class="ninja-headband"></div>
+    <div class="ninja-eyes">
+      <div class="ninja-eye"></div>
+      <div class="ninja-eye"></div>
+    </div>
+    <div class="ninja-body"></div>
+    <div class="ninja-belt"></div>
+    <div class="ninja-arm-l"></div>
+    <div class="ninja-arm-r"></div>
+    <div class="ninja-leg-l"></div>
+    <div class="ninja-leg-r"></div>
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+
+    document.body.addEventListener('click', () => {
+      ipcRenderer.send('open-ninja-chat');
+    });
+  </script>
+</body>
+</html>

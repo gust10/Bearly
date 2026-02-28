@@ -5,7 +5,13 @@ const pdfParse = require('pdf-parse');
 
 let quizWin = null;
 let ninjaWin = null;
+let dockNinjaWin = null;
+let chatWin = null;
 let savedQuestions = [];
+
+const MINIMAX_API_KEY = 'sk-api-2Jjgnmytz_ZH7aiIl_0ICkmqSkgYXfWO35ck4atu3Ujcyjv0Bu9ZyUN3wOaBYJnjmkeKHqmath7wFUJKsxCmGMc01QE8tUcPnm_I3ulK_x3s4gMaMOcSLQA';
+const ELEVENLABS_API_KEY = '508eba8b0541bcefd574168a49f09e2ea7debae855e9675eb826ce44d5db2ef6';
+const ELEVENLABS_AGENT_ID = 'agent_6601kjj54mwgf10rjmp88p06fecq';
 
 // Questions persistence
 function getQuestionsPath() {
@@ -236,6 +242,78 @@ function createWindow() {
 
   ipcMain.on('stop-recall-timer', () => {
     if (recallInterval) { clearInterval(recallInterval); recallInterval = null; }
+  });
+
+  // === Dock Ninja (sits above dock) ===
+  const dockW = 90;
+  const dockH = 110;
+  dockNinjaWin = new BrowserWindow({
+    width: dockW,
+    height: dockH,
+    x: Math.round((screenW - dockW) / 2),
+    y: workY + workHeight - dockH,
+    frame: false,
+    alwaysOnTop: true,
+    resizable: false,
+    movable: false,
+    skipTaskbar: true,
+    transparent: true,
+    hasShadow: false,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+    },
+  });
+  dockNinjaWin.loadFile('ninja-dock.html');
+
+  // === Chat window ===
+  ipcMain.on('open-ninja-chat', () => {
+    if (chatWin && !chatWin.isDestroyed()) {
+      chatWin.focus();
+      return;
+    }
+
+    const cw = 350;
+    const ch = 450;
+    const dockX = Math.round((screenW - dockW) / 2);
+
+    chatWin = new BrowserWindow({
+      width: cw,
+      height: ch,
+      x: dockX + Math.round((dockW - cw) / 2),
+      y: workY + workHeight - dockH - ch - 10,
+      frame: false,
+      alwaysOnTop: true,
+      resizable: false,
+      movable: true,
+      transparent: true,
+      hasShadow: true,
+      webPreferences: {
+        nodeIntegration: true,
+        contextIsolation: false,
+      },
+    });
+
+    chatWin.loadFile('ninja-chat.html');
+    chatWin.webContents.on('did-finish-load', () => {
+      chatWin.webContents.send('ninja-greeting');
+    });
+    chatWin.on('closed', () => { chatWin = null; });
+  });
+
+  ipcMain.on('close-ninja-chat', () => {
+    if (chatWin && !chatWin.isDestroyed()) chatWin.close();
+  });
+
+  // ElevenLabs signed URL for voice conversation
+  ipcMain.handle('get-signed-url', async () => {
+    const res = await fetch(
+      `https://api.elevenlabs.io/v1/convai/conversation/get-signed-url?agent_id=${ELEVENLABS_AGENT_ID}`,
+      { headers: { 'xi-api-key': ELEVENLABS_API_KEY } }
+    );
+    if (!res.ok) throw new Error('Failed to get signed URL');
+    const data = await res.json();
+    return data.signed_url;
   });
 
   // PDF file picker
