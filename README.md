@@ -141,3 +141,7 @@ ISC
 * Hyunsung Shin - Software Development
 * Prajitno Fiona Keira - Design
 * Yash Relekar - Design
+
+* ## Recommendations
+* **Strongly Recommended for macOS**
+* **Strongly Recommended for pdfs ~8000 characters / 400 words**
