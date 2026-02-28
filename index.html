@@ -125,6 +125,10 @@
         // Pomodoro Window Toggle
         if (tabName === 'pomodoro') {
           ipcRenderer.send('toggle-pomodoro');
+        } else if (tabName === 'flashcards') {
+          ipcRenderer.send('open-flashcards-viewer');
+          // Revert active tab to previous since we don't use a tab panel for this
+          return;
         } else {
           ipcRenderer.send('close-pomodoro');
         }

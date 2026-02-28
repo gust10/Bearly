@@ -143,6 +143,58 @@ function initReverseTeaching() {
   document.getElementById('feedbackBackBtn').addEventListener('click', () => {
     window.showScreen('explanationScreen');
   });
+
+  // === Flashcard Modal Logic ===
+  const fcModal = document.getElementById('flashcardModal');
+  const openFcModalBtn = document.getElementById('openFcModalBtn');
+  const cancelFcBtn = document.getElementById('cancelFcBtn');
+  const generateFcBtn = document.getElementById('generateFcBtn');
+  const fcMsgCountInput = document.getElementById('fcMsgCount');
+  const msgCountLabel = document.getElementById('msgCountLabel');
+
+  openFcModalBtn.addEventListener('click', () => {
+    const n = chatHistory.length;
+    fcMsgCountInput.max = n;
+    fcMsgCountInput.value = Math.min(10, n);
+    msgCountLabel.textContent = `MESSAGES TO INCLUDE (1-${n})`;
+    fcModal.style.display = 'flex';
+  });
+
+  cancelFcBtn.addEventListener('click', () => {
+    fcModal.style.display = 'none';
+  });
+
+  generateFcBtn.addEventListener('click', async () => {
+    const deckName = document.getElementById('fcDeckName').value.trim() || 'Study Session';
+    const cardCount = parseInt(document.getElementById('fcCardCount').value) || 5;
+    const msgCount = parseInt(document.getElementById('fcMsgCount').value) || 5;
+
+    // Get last N messages for context
+    const transcript = chatHistory.slice(-msgCount)
+      .map(m => `${m.role === 'user' ? 'Student' : 'Tutor'}: ${m.content}`)
+      .join('\n');
+
+    generateFcBtn.disabled = true;
+    generateFcBtn.textContent = 'Generating...';
+
+    const result = await ipcRenderer.invoke('generate-flashcards', {
+      deckName,
+      cardCount,
+      transcript
+    });
+
+    generateFcBtn.disabled = false;
+    generateFcBtn.textContent = 'Generate';
+
+    if (result.success) {
+      alert(`Successfully generated ${result.addedCount} cards for "${deckName}"!`);
+      fcModal.style.display = 'none';
+      // Open viewer to show them
+      ipcRenderer.send('open-flashcards-viewer');
+    } else {
+      alert('Generation failed: ' + result.error);
+    }
+  });
 }
 
 module.exports = { initReverseTeaching };

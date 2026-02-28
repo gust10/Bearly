@@ -10,6 +10,7 @@ let dockNinjaWin = null;
 let chatWin = null;
 let calendarWin = null;
 let blurWin = null;
+let flashcardsWin = null;
 let savedQuestions = [];
 let savedExams = [];
 let currentStudyMaterial = ''; // Full text, available during session only
@@ -875,6 +876,124 @@ function createWindow() {
         saveMemory(memory);
       }
       currentStudyMaterial = '';
+    }
+  });
+
+  // === Flashcard Generation & Management ===
+  function getFlashcardsPath() {
+    const dir = path.join(app.getPath('userData'), 'studyyyy-data');
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    return path.join(dir, 'flashcards.json');
+  }
+
+  function loadFlashcards() {
+    const p = getFlashcardsPath();
+    if (fs.existsSync(p)) {
+      try {
+        return JSON.parse(fs.readFileSync(p, 'utf-8'));
+      } catch (e) {}
+    }
+    return { decks: [] };
+  }
+
+  function saveFlashcards(data) {
+    fs.writeFileSync(getFlashcardsPath(), JSON.stringify(data, null, 2));
+  }
+
+  ipcMain.handle('get-flashcards', () => {
+    return loadFlashcards();
+  });
+
+  ipcMain.on('update-flashcards', (_, data) => {
+    saveFlashcards(data);
+    // Notify viewer if open
+    if (flashcardsWin && !flashcardsWin.isDestroyed()) {
+      flashcardsWin.webContents.send('flashcards-updated', data);
+    }
+  });
+
+  ipcMain.on('open-flashcards-viewer', () => {
+    if (flashcardsWin && !flashcardsWin.isDestroyed()) {
+      flashcardsWin.focus();
+      return;
+    }
+
+    const fw = 400;
+    const fh = 550;
+    const [wx, wy] = win.getPosition();
+
+    flashcardsWin = new BrowserWindow({
+      width: fw,
+      height: fh,
+      x: wx + winWidth + 10,
+      y: wy,
+      frame: false,
+      alwaysOnTop: true,
+      resizable: true,
+      transparent: true,
+      hasShadow: true,
+      webPreferences: {
+        nodeIntegration: true,
+        contextIsolation: false,
+      },
+      icon: path.join(__dirname, 'mov/cover.png'),
+    });
+
+    flashcardsWin.loadFile('flashcards-viewer.html');
+    flashcardsWin.on('closed', () => { flashcardsWin = null; });
+  });
+
+  ipcMain.handle('generate-flashcards', async (_, { deckName, cardCount, transcript }) => {
+    try {
+      const res = await fetch('https://api.minimax.io/v1/text/chatcompletion_v2', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + MINIMAX_API_KEY,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'MiniMax-M2',
+          messages: [
+            {
+              role: 'system',
+              content: `You are a study assistant. Convert the following chat transcript into ${cardCount} flashcards. 
+Return ONLY a JSON array of objects with "question" and "answer" keys. 
+Focus on key educational concepts discussed. 
+No markdown, no preamble, just the JSON array.`
+            },
+            { role: 'user', content: transcript }
+          ],
+          temperature: 0.7,
+        }),
+      });
+
+      const data = await res.json();
+      const text = data.choices[0].message.content.trim();
+      const jsonStr = text.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
+      const newCards = JSON.parse(jsonStr);
+
+      if (!Array.isArray(newCards)) throw new Error('Invalid AI response format');
+
+      let fcData = loadFlashcards();
+      let deck = fcData.decks.find(d => d.name.toLowerCase() === deckName.toLowerCase());
+      
+      if (!deck) {
+        deck = { name: deckName, cards: [] };
+        fcData.decks.push(deck);
+      }
+      
+      deck.cards.push(...newCards);
+      saveFlashcards(fcData);
+
+      // Refresh viewer if open
+      if (flashcardsWin && !flashcardsWin.isDestroyed()) {
+        flashcardsWin.webContents.send('flashcards-updated', fcData);
+      }
+
+      return { success: true, addedCount: newCards.length };
+    } catch (err) {
+      console.error('Flashcard generation failed:', err);
+      return { success: false, error: err.message };
     }
   });
 
