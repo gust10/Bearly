@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pomodoro</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      height: 100%;
+      font-family: 'SF Pro Rounded', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: transparent;
+      color: #4a4a5a;
+      overflow: hidden;
+    }
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      background: rgba(255, 255, 255, 0.97);
+      border-radius: 0 16px 16px 0;
+      border: 1px solid #eee;
+      border-left: none; /* attached to main window */
+      overflow: hidden;
+      padding: 16px;
+      position: relative;
+    }
+    
+    .view-screen {
+      display: none;
+      flex-direction: column;
+      height: 100%;
+      width: 100%;
+    }
+    .view-screen.active {
+      display: flex;
+    }
+    .titlebar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .titlebar h2 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #e8a0bf;
+      letter-spacing: 0.5px;
+    }
+    .timer-display {
+      font-size: 48px;
+      font-weight: 800;
+      text-align: center;
+      color: #64748b;
+      margin-bottom: 10px;
+      font-variant-numeric: tabular-nums;
+    }
+    .status-text {
+      text-align: center;
+      font-size: 13px;
+      font-weight: 600;
+      color: #7c6a9a;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .settings-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      font-size: 13px;
+      color: #666;
+    }
+    .settings-row input {
+      width: 50px;
+      padding: 4px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      text-align: center;
+      font-family: inherit;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-top: auto;
+    }
+    button.btn {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-start {
+      background: linear-gradient(135deg, #fce7f3, #ede9fe);
+      color: #e8a0bf;
+    }
+    .btn-start:hover {
+      filter: brightness(0.95);
+    }
+    .btn-pause {
+      background: #f1f5f9;
+      color: #64748b;
+    }
+    .btn-pause:hover {
+      background: #e2e8f0;
+    }
+    .settings-row select {
+      width: 50px;
+      padding: 4px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      text-align: center;
+      font-family: inherit;
+      background: #fff;
+    }
+    .tomatoes-container {
+      display: flex;
+      justify-content: center;
+      gap: 5px;
+      margin-top: 8px;
+      margin-bottom: 20px;
+    }
+    .tomato-icon {
+      width: 15px;
+      height: 15px;
+      color: #e2e8f0;
+      transition: color 0.3s, transform 0.2s;
+    }
+    .tomato-icon.active {
+      color: #e8a0bf;
+      transform: scale(1.1);
+    }
+    .tomato-stem {
+      color: inherit; /* Matches body color by default */
+    }
+    .tomato-icon.active .tomato-stem,
+    .mini-mode .floating-tomato .tomato-stem {
+      color: #22c55e !important; /* Vibrant green for active/mini tomatoes */
+    }
+    
+    .view-options .titlebar {
+      margin-bottom: 30px;
+    }
+    .option-btn {
+      background: #fff;
+      border: 1px solid #eaeaea;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #64748b;
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .option-btn:hover {
+      border-color: #d8b4e2;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+      color: #8b5cf6;
+      transform: translateY(-1px);
+    }
+    .option-btn svg {
+      width: 20px;
+      height: 20px;
+      color: #bfa1ce;
+    }
+    
+    .back-btn {
+      background: none;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 0;
+      margin-bottom: 15px;
+      transition: color 0.2s;
+    }
+    .back-btn:hover {
+      color: #64748b;
+    }
+
+    /* Mini mode styles */
+    .mini-mode .view-options, 
+    .mini-mode .view-planner {
+      display: none !important;
+    }
+    .mini-mode .titlebar,
+    .mini-mode .back-btn,
+    .mini-mode .settings-row,
+    .mini-mode .tomatoes-container,
+    .mini-mode .status-text,
+    .mini-mode .btn-reset,
+    .mini-mode .timer-display,
+    .mini-mode .btn-start {
+      display: none !important;
+    }
+    .mini-mode .app {
+      padding: 0;
+      justify-content: center;
+      align-items: center;
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+    }
+    .mini-mode .controls {
+      margin-top: 0;
+      width: 100%;
+      height: 100%;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .mini-mode .btn-pause {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      width: 55px;
+      height: 55px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      z-index: 10;
+      background: rgba(255,255,255,0.9);
+      color: #64748b;
+      border: 1px solid #ddd;
+      margin: 0; /* ensure no margin interferes with centering */
+    }
+    .mini-mode .controls:hover .btn-pause {
+      opacity: 1;
+    }
+    
+    /* Big Tomato UI Update */
+    .floating-tomato {
+      display: none;
+      width: 120px;
+      height: 120px;
+      position: relative;
+    }
+    .mini-mode .floating-tomato {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .tomato-body {
+      width: 110px;
+      height: 95px;
+      background: conic-gradient(#e2e8f0 0%, #e8a0bf 0%);
+      -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 5C5 5 2 9 2 14C2 19 6 22 12 22C18 22 22 19 22 14C22 9 19 5 12 5Z'/%3E%3C/svg%3E");
+      mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 5C5 5 2 9 2 14C2 19 6 22 12 22C18 22 22 19 22 14C22 9 19 5 12 5Z'/%3E%3C/svg%3E");
+      -webkit-mask-size: contain;
+      mask-size: contain;
+      -webkit-mask-repeat: no-repeat;
+      mask-repeat: no-repeat;
+      -webkit-mask-position: center;
+      mask-position: center;
+      transition: background 0.1s linear;
+    }
+    .tomato-calyx {
+      position: absolute;
+      top: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 40px;
+      height: 40px;
+      z-index: 2;
+      pointer-events: none;
+    }
+    .tomato-calyx svg {
+      width: 100%;
+      height: 100%;
+      fill: #22c55e;
+    }
+    .mini-mode.break-mode .tomato-body {
+      /* Break mode background handled by JS */
+      opacity: 1; 
+    }
+    .mini-mode.break-mode .floating-tomato svg {
+      color: #10b981;
+    }
+    .btn-reset {
+      background: none;
+      border: none;
+      color: #64748b;
+      font-size: 11px;
+      text-decoration: underline;
+      cursor: pointer;
+      margin-top: 6px;
+      text-align: center;
+      width: 100%;
+      font-family: inherit;
+      outline: none;
+    }
+    .btn-reset:hover {
+      color: #475569;
+    }
+    .btn-reset:focus {
+      outline: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="app" id="appFrame">
+    <!-- Options Screen -->
+    <div class="view-screen active" id="viewOptions">
+      <div class="titlebar">
+        <h2>pomodoro menu</h2>
+      </div>
+      
+      <button class="option-btn" id="btnGoPlanner">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+        Plan Pomodoro Blocks
+      </button>
+
+      <button class="option-btn" id="btnGoTimer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+        Adjust Pomodoro Timer
+      </button>
+    </div>
+
+    <!-- Planner Blank Screen -->
+    <div class="view-screen" id="viewPlanner">
+      <button class="back-btn back-to-menu">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        menu
+      </button>
+      <div class="titlebar">
+        <h2>plan blocks</h2>
+      </div>
+      <p style="text-align: center; color: #94a3b8; font-size: 13px; margin-top: 20px;">Planner interface coming soon...</p>
+    </div>
+
+    <!-- Timer Screen -->
+    <div class="view-screen" id="viewTimer">
+      <button class="back-btn back-to-menu" id="btnBackFromTimer">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        menu
+      </button>
+      <div class="titlebar" style="margin-bottom: 10px;">
+        <h2>pomodoro timer</h2>
+      </div>
+      
+      <div class="timer-display" id="timeDisplay">25:00</div>
+      <div class="status-text" id="statusText">Ready</div>
+
+      <div class="settings-row">
+        <label>Pomodoro (min)</label>
+        <input type="number" id="inPomo" value="25" min="1">
+      </div>
+      <div class="settings-row">
+        <label>Break (min)</label>
+        <input type="number" id="inBreak" value="5" min="1">
+      </div>
+      <div class="settings-row">
+        <label>Repetitions</label>
+        <select id="inReps">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4" selected>4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+          <option value="8">8</option>
+          <option value="9">9</option>
+          <option value="10">10</option>
+        </select>
+      </div>
+      <div class="tomatoes-container" id="tomatoesContainer"></div>
+
+      <div class="controls">
+        <div class="floating-tomato">
+          <div class="tomato-body" id="tomatoBody"></div>
+          <div class="tomato-calyx">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 2L13 5L16 4L14 7L17 8L14 9L15 12L12 10L9 12L10 9L7 8L10 7L8 4L11 5L12 2Z"/>
+            </svg>
+          </div>
+        </div>
+        <button class="btn btn-start" id="btnStart" data-state="start">
+          <svg id="svgStart" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+        </button>
+        <button class="btn btn-pause" id="btnPause">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+        </button>
+      </div>
+      <button class="btn-reset" id="btnReset">restart</button>
+    </div>
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+    let timer = null;
+    let timeLeft = 0; // in seconds
+    let isWorking = true;
+    let repsLeft = 0;
+    let isRunning = false;
+
+    const lblTime = document.getElementById('timeDisplay');
+    const lblStatus = document.getElementById('statusText');
+    const inPomo = document.getElementById('inPomo');
+    const inBreak = document.getElementById('inBreak');
+    const inReps = document.getElementById('inReps');
+    const tomatoesContainer = document.getElementById('tomatoesContainer');
+    const btnStart = document.getElementById('btnStart');
+    const btnPause = document.getElementById('btnPause');
+    const btnReset = document.getElementById('btnReset');
+
+    const viewOptions = document.getElementById('viewOptions');
+    const viewPlanner = document.getElementById('viewPlanner');
+    const viewTimer = document.getElementById('viewTimer');
+    const btnGoPlanner = document.getElementById('btnGoPlanner');
+    const btnGoTimer = document.getElementById('btnGoTimer');
+    const backBtns = document.querySelectorAll('.back-to-menu');
+    const btnBackFromTimer = document.getElementById('btnBackFromTimer');
+
+    const clockHand = document.getElementById('clockHand');
+    const tomatoBody = document.getElementById('tomatoBody');
+    let totalTimeForPhase = 0;
+
+    function switchView(viewId) {
+      document.querySelectorAll('.view-screen').forEach(v => v.classList.remove('active'));
+      document.getElementById(viewId).classList.add('active');
+      
+      // Tell main process to resize window
+      if (viewId === 'viewOptions') {
+        ipcRenderer.send('resize-pomodoro', 'menu');
+      } else if (viewId === 'viewPlanner') {
+        ipcRenderer.send('resize-pomodoro', 'planner');
+      } else if (viewId === 'viewTimer') {
+        ipcRenderer.send('resize-pomodoro', 'timer');
+      }
+    }
+
+    btnGoPlanner.addEventListener('click', () => switchView('viewPlanner'));
+    btnGoTimer.addEventListener('click', () => switchView('viewTimer'));
+
+    backBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (isRunning) return; // Prevent backing out if timer is running
+        switchView('viewOptions');
+      });
+    });
+
+    function setMiniMode(isMini) {
+      if (isMini) {
+        document.body.classList.add('mini-mode');
+        if (!isWorking) document.body.classList.add('break-mode');
+        ipcRenderer.send('resize-pomodoro', 'mini');
+      } else {
+        document.body.classList.remove('mini-mode');
+        document.body.classList.remove('break-mode');
+        // Return to standard timer size
+        ipcRenderer.send('resize-pomodoro', 'timer');
+      }
+    }
+
+    function updateDisplay() {
+      const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+      const s = (timeLeft % 60).toString().padStart(2, '0');
+      lblTime.innerText = `${m}:${s}`;
+      
+      if (totalTimeForPhase > 0) {
+        const elapsed = totalTimeForPhase - timeLeft;
+        const progress = (elapsed / totalTimeForPhase) * 100;
+        
+        // Update big tomato gradient
+        const colorPassed = "#e2e8f0"; // Grey
+        const colorRemaining = isWorking ? "#e8a0bf" : "#22c55e"; // Pink or Green
+        if (tomatoBody) {
+          tomatoBody.style.background = `conic-gradient(${colorPassed} 0% ${progress}%, ${colorRemaining} ${progress}% 100%)`;
+        }
+
+        // Old clockHand logic (can be removed or kept if still used elsewhere)
+        if (clockHand) {
+          const deg = (elapsed / totalTimeForPhase) * 360;
+          clockHand.style.transform = `rotate(${deg}deg)`;
+        }
+      }
+    }
+
+    function tick() {
+      if (timeLeft > 0) {
+        timeLeft--;
+        updateDisplay();
+      } else {
+        // Switch state
+        if (isWorking) {
+          repsLeft--;
+          renderTomatoes(repsLeft); // Update tomatoes automatically
+          if (repsLeft <= 0) {
+            clearInterval(timer);
+            isRunning = false;
+            lblStatus.innerText = 'Completed!';
+            inReps.value = 1;
+            renderTomatoes();
+            setMiniMode(false);
+            btnStart.dataset.state = 'start';
+            document.getElementById('svgStart').innerHTML = '<polygon points="5 3 19 12 5 21 5 3"></polygon>';
+            return;
+          }
+          isWorking = false;
+          totalTimeForPhase = parseInt(inBreak.value) * 60;
+          timeLeft = totalTimeForPhase;
+          lblStatus.innerText = `Break (${repsLeft} left)`;
+          lblTime.style.color = '#10b981'; // green for break
+          if (document.body.classList.contains('mini-mode')) document.body.classList.add('break-mode');
+        } else {
+          isWorking = true;
+          totalTimeForPhase = parseInt(inPomo.value) * 60;
+          timeLeft = totalTimeForPhase;
+          lblStatus.innerText = `Focus (${repsLeft} left)`;
+          lblTime.style.color = '#64748b'; // grey for focus
+          document.body.classList.remove('break-mode');
+        }
+        updateDisplay();
+      }
+    }
+
+    btnStart.addEventListener('click', () => {
+      if (isRunning) return;
+      
+      // If we are starting fresh (not paused)
+      if (timeLeft <= 0 || lblStatus.innerText === 'Ready' || lblStatus.innerText === 'Completed!' || btnStart.dataset.state === 'start') {
+        repsLeft = parseInt(inReps.value);
+        if (repsLeft <= 0) return;
+        isWorking = true;
+        totalTimeForPhase = parseInt(inPomo.value) * 60;
+        timeLeft = totalTimeForPhase;
+        lblStatus.innerText = `Focus (${repsLeft} left)`;
+        lblTime.style.color = '#64748b';
+        updateDisplay();
+      }
+
+      isRunning = true;
+      btnStart.dataset.state = 'resume';
+      document.getElementById('svgStart').innerHTML = '<polygon points="5 3 19 12 5 21 5 3"></polygon>'; // Keep play icon for resume but state is internally resume
+      setMiniMode(true);
+      timer = setInterval(tick, 1000);
+    });
+
+    btnPause.addEventListener('click', () => {
+      if (!isRunning) return;
+      isRunning = false;
+      clearInterval(timer);
+      lblStatus.innerText = 'Paused';
+      setMiniMode(false);
+    });
+
+    btnReset.addEventListener('click', () => {
+      isRunning = false;
+      clearInterval(timer);
+      timeLeft = parseInt(inPomo.value) * 60;
+      lblStatus.innerText = 'Ready';
+      lblTime.style.color = '#64748b';
+      btnStart.dataset.state = 'start';
+      document.getElementById('svgStart').innerHTML = '<polygon points="5 3 19 12 5 21 5 3"></polygon>';
+      inReps.value = 4;
+      renderTomatoes(4);
+      updateDisplay();
+      setMiniMode(false);
+    });
+
+    // Initial display
+    inPomo.addEventListener('change', () => {
+      if (!isRunning) {
+        timeLeft = parseInt(inPomo.value) * 60;
+        updateDisplay();
+      }
+    });
+
+    function renderTomatoes(activeCount) {
+      if (activeCount === undefined) activeCount = parseInt(inReps.value);
+      tomatoesContainer.innerHTML = '';
+      for (let i = 0; i < 10; i++) {
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('viewBox', '0 0 24 24');
+        svg.setAttribute('class', i < activeCount ? 'tomato-icon active' : 'tomato-icon');
+        // Dual-path tomato: body (fills currentColor) and stem (fixed green)
+        svg.innerHTML = `
+          <path fill="currentColor" d="M12 5C7.3 5 3.5 8.5 3.5 13c0 4.5 3.8 8.5 8.5 8.5h0.1c4.7 0 8.5-4 8.5-8.5 0-4.5-3.8-8-8.5-8z"/>
+          <path class="tomato-stem" fill="currentColor" d="M12,2c0.4,1.4,1.6,2.4,3,2.4c-1.4,0-2.6,1-2.6,2.4c-0.4-1.4-1.6-2.4-3-2.4C10.8,4.4,12,3.4,12,2z"/>
+        `;
+        tomatoesContainer.appendChild(svg);
+      }
+    }
+    
+    inReps.addEventListener('change', () => {
+      if (!isRunning) renderTomatoes();
+    });
+    
+    timeLeft = parseInt(inPomo.value) * 60;
+    updateDisplay();
+    renderTomatoes();
+
+  </script>
+</body>
+</html>

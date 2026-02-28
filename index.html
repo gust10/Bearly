@@ -134,7 +134,7 @@
     </div>
 
     <nav class="nav">
-      <button class="nav-item active" data-tab="pomodoro">
+      <button class="nav-item active" data-tab="pomodoro" id="btnPomodoro">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         Pomodoro
       </button>
@@ -171,6 +171,13 @@
         item.classList.add('active');
       });
     });
+
+    const btnPomodoro = document.getElementById('btnPomodoro');
+    if (btnPomodoro) {
+      btnPomodoro.addEventListener('click', () => {
+        ipcRenderer.send('toggle-pomodoro');
+      });
+    }
 
     // Mouse enter/leave for auto-hide
     document.body.addEventListener('mouseenter', () => {
