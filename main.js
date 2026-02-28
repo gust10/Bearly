@@ -2,7 +2,7 @@ const { app, BrowserWindow, screen, ipcMain, dialog } = require('electron');
 const { execSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
-const pdfParse = require('pdf-parse');
+const { PDFParse } = require('pdf-parse');
 
 let quizWin = null;
 let ninjaWin = null;
@@ -11,6 +11,7 @@ let chatWin = null;
 let calendarWin = null;
 let blurWin = null;
 let flashcardsWin = null;
+let reverseTeachingWin = null;
 let savedQuestions = [];
 let savedExams = [];
 let currentStudyMaterial = ''; // Full text, available during session only
@@ -943,6 +944,43 @@ function createWindow() {
     flashcardsWin.on('closed', () => { flashcardsWin = null; });
   });
 
+  // === Reverse Teaching Window ===
+  ipcMain.on('open-reverse-teaching', () => {
+    if (reverseTeachingWin && !reverseTeachingWin.isDestroyed()) {
+      reverseTeachingWin.focus();
+      return;
+    }
+
+    const rw = 380;
+    const rh = 520;
+    const [wx, wy] = win.getPosition();
+
+    reverseTeachingWin = new BrowserWindow({
+      width: rw,
+      height: rh,
+      x: wx + winWidth + 10,
+      y: wy,
+      frame: false,
+      alwaysOnTop: true,
+      resizable: true,
+      movable: true,
+      transparent: true,
+      hasShadow: true,
+      webPreferences: {
+        nodeIntegration: true,
+        contextIsolation: false,
+      },
+      icon: path.join(__dirname, 'mov/cover.png'),
+    });
+
+    reverseTeachingWin.loadFile('reverse-teaching-window.html');
+    reverseTeachingWin.on('closed', () => { reverseTeachingWin = null; });
+  });
+
+  ipcMain.on('close-reverse-teaching', () => {
+    if (reverseTeachingWin && !reverseTeachingWin.isDestroyed()) reverseTeachingWin.close();
+  });
+
   ipcMain.handle('generate-flashcards', async (_, { deckName, cardCount, transcript }) => {
     try {
       const res = await fetch('https://api.minimax.io/v1/text/chatcompletion_v2', {
@@ -994,6 +1032,17 @@ No markdown, no preamble, just the JSON array.`
     } catch (err) {
       console.error('Flashcard generation failed:', err);
       return { success: false, error: err.message };
+    }
+  });
+
+  // Save reverse teaching transcript to memory
+  ipcMain.on('save-reverse-teaching-transcript', async (_, { transcript, topic }) => {
+    if (!transcript || transcript.length < 20) return;
+    const extracted = await extractMemoryFromTranscript(transcript);
+    if (extracted) {
+      let memory = loadMemory();
+      memory = mergeMemory(memory, extracted, 'reverse_teaching');
+      saveMemory(memory);
     }
   });
 
@@ -1121,15 +1170,21 @@ No markdown, no preamble, just the JSON array.`
   setInterval(checkSpacedRepetition, 60 * 60 * 1000);
 
   // PDF file picker
-  ipcMain.handle('pick-pdf', async () => {
-    const result = await dialog.showOpenDialog(win, {
+  ipcMain.handle('pick-pdf', async (event) => {
+    const senderWin = BrowserWindow.fromWebContents(event.sender);
+    const dialogOpts = {
       filters: [{ name: 'PDF', extensions: ['pdf'] }],
       properties: ['openFile'],
-    });
+    };
+    const result = senderWin
+      ? await dialog.showOpenDialog(senderWin, dialogOpts)
+      : await dialog.showOpenDialog(dialogOpts);
     if (result.canceled || result.filePaths.length === 0) return null;
     const buf = fs.readFileSync(result.filePaths[0]);
-    const data = await pdfParse(buf);
-    return data.text;
+    const pdf = new PDFParse({ data: new Uint8Array(buf), verbosity: 0 });
+    const text = await pdf.getText();
+    await pdf.destroy();
+    return text.text;
   });
 
   resetTimer();

@@ -9,14 +9,14 @@
   <div class="peek-line" id="peekLine"></div>
   <div class="app" id="appPanel">
     <div class="titlebar">
-      <h2>studyyyy</h2>
+      <h2>bearly</h2>
       <button class="close-btn" id="closeBtn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
 
     <nav class="nav" id="mainNav">
-      <button class="nav-item active" data-tab="pomodoro" id="btnPomodoro">
+      <button class="nav-item" data-tab="pomodoro" id="btnPomodoro">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         Pomodoro
       </button>
@@ -35,10 +35,6 @@
       <button class="nav-item" id="sidebarCalendarBtn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         Calendar
-      </button>
-      <button class="nav-item" id="sidebarPdfBtn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        Upload PDF
       </button>
     </nav>
 
@@ -80,26 +76,11 @@
 
     // Calendar button
     document.getElementById('sidebarCalendarBtn').addEventListener('click', () => {
+      navItems.forEach(n => n.classList.remove('active'));
+      document.getElementById('sidebarCalendarBtn').classList.add('active');
       ipcRenderer.send('open-calendar');
     });
 
-    // Sidebar PDF button logic
-    document.getElementById('sidebarPdfBtn').addEventListener('click', async () => {
-      const text = await ipcRenderer.invoke('pick-pdf');
-      if (text) {
-        // Store full text as study material for voice session context
-        ipcRenderer.send('set-study-material', text);
-
-        const activeTab = document.querySelector('.nav-item.active').dataset.tab;
-        if (activeTab === 'active-recall') {
-          const arNotes = document.getElementById('arNotes');
-          if (arNotes) arNotes.value = text;
-        } else if (activeTab === 'reverse-teaching') {
-          const explanationInput = document.getElementById('explanationInput');
-          if (explanationInput) explanationInput.value = text;
-        }
-      }
-    });
 
     // Close button
     document.getElementById('closeBtn').addEventListener('click', () => {
@@ -127,16 +108,15 @@
           ipcRenderer.send('toggle-pomodoro');
         } else if (tabName === 'flashcards') {
           ipcRenderer.send('open-flashcards-viewer');
-          // Revert active tab to previous since we don't use a tab panel for this
+          return;
+        } else if (tabName === 'reverse-teaching') {
+          ipcRenderer.send('open-reverse-teaching');
           return;
         } else {
           ipcRenderer.send('close-pomodoro');
         }
 
-        // Reverse Teaching specific initial view setting
-        if (tabName === 'reverse-teaching' && window.showScreen) {
-          window.showScreen('topicScreen');
-        } else {
+        if (tabName !== 'reverse-teaching') {
           ipcRenderer.send('set-window-height', 500);
         }
       });
