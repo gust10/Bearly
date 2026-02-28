@@ -3,11 +3,11 @@
 A desktop study companion built with Electron. Combines Pomodoro timers, active recall, flashcards, and an AI-powered "Ninja" assistant to help you study smarter.
 
 ## Team Members
-*Kei Jonathan McCall-Pohl - Software Development
-*Maddalena Di Salvo - Software Development
-*Hyunsung Shin - Software Development
-*Fiona Keira - Design
-*Yash Relekar - Design
+* Kei Jonathan McCall-Pohl - Software Development
+* Maddalena Di Salvo - Software Development
+* Hyunsung Shin - Software Development
+* Fiona Keira - Design
+* Yash Relekar - Design
 
 ## Showcase
 
