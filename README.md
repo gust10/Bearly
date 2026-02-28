@@ -6,7 +6,7 @@ Unlike traditional AI tools that operate as separate applications, this solution
 
 CleverCub makes you smarter by making you teach it first—then targets your gaps with precision practice. Built in under 24 hours, it is an AI tool that measures understanding, not just answers; converts weak spots into wins using Feynman‑style active recall.
 
-Differentiators:
+## Differentiators:
 * Teach‑the‑AI workflow: you explain; it diagnoses.
 * Gap taxonomy: conceptual vs procedural vs calculation and more.
 * Adaptive drills: right difficulty, right format, right moment.
