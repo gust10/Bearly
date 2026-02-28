@@ -330,6 +330,64 @@
     .btn-reset:focus {
       outline: none;
     }
+
+    /* Planner task items */
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: #fff;
+      border: 1px solid #eaeaea;
+      border-radius: 10px;
+      font-size: 12px;
+      transition: all 0.2s;
+    }
+    .task-item.active {
+      border-color: #e8a0bf;
+      background: linear-gradient(135deg, #fdf2f8, #faf5ff);
+    }
+    .task-item.done {
+      opacity: 0.5;
+      text-decoration: line-through;
+    }
+    .task-check {
+      width: 18px;
+      height: 18px;
+      border: 2px solid #d4d4d4;
+      border-radius: 50%;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .task-check:hover {
+      border-color: #e8a0bf;
+    }
+    .task-item.done .task-check {
+      background: #e8a0bf;
+      border-color: #e8a0bf;
+    }
+    .task-item.done .task-check::after {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: white;
+      border-radius: 50%;
+    }
+    .task-name {
+      flex: 1;
+      color: #4a4a5a;
+      font-weight: 500;
+    }
+    .task-time {
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
   </style>
 </head>
 <body>
@@ -355,16 +413,23 @@
       </button>
     </div>
 
-    <!-- Planner Blank Screen -->
+    <!-- Planner Screen -->
     <div class="view-screen" id="viewPlanner">
       <button class="back-btn back-to-menu">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
         menu
       </button>
       <div class="titlebar">
-        <h2>plan blocks</h2>
+        <h2>study plan</h2>
       </div>
-      <p style="text-align: center; color: #94a3b8; font-size: 13px; margin-top: 20px;">Planner interface coming soon...</p>
+      <div id="plannerEmpty" style="text-align: center; color: #94a3b8; font-size: 13px; margin-top: 20px;">
+        Chat with the bear to create a study plan!
+      </div>
+      <div id="plannerTasks" style="display: none; flex: 1; overflow-y: auto;">
+        <div id="taskList" style="display: flex; flex-direction: column; gap: 8px;"></div>
+        <div style="margin-top: 12px; text-align: center; font-size: 11px; color: #94a3b8;" id="plannerTotal"></div>
+      </div>
+      <button class="btn btn-start" id="btnStartPlan" style="display: none; margin-top: 12px;">Start Study Session</button>
     </div>
 
     <!-- Timer Screen -->
@@ -713,6 +778,183 @@
         stopDistractionChecking();
         lblStatus.innerText = 'Paused';
         setMiniMode(false);
+      }
+    });
+
+    // === Study Planner ===
+    let studyTasks = [];
+    let currentTaskIndex = -1;
+
+    const taskListEl = document.getElementById('taskList');
+    const plannerTasks = document.getElementById('plannerTasks');
+    const plannerEmpty = document.getElementById('plannerEmpty');
+    const plannerTotal = document.getElementById('plannerTotal');
+    const btnStartPlan = document.getElementById('btnStartPlan');
+
+    function renderTaskList() {
+      taskListEl.innerHTML = '';
+      let totalMin = 0;
+      studyTasks.forEach((t, i) => {
+        totalMin += t.minutes;
+        const item = document.createElement('div');
+        item.className = 'task-item' + (t.done ? ' done' : '') + (i === currentTaskIndex ? ' active' : '');
+        item.innerHTML = `
+          <div class="task-check" data-idx="${i}"></div>
+          <span class="task-name">${t.task}</span>
+          <span class="task-time">${t.minutes}m</span>
+        `;
+        item.querySelector('.task-check').addEventListener('click', () => toggleTask(i));
+        taskListEl.appendChild(item);
+      });
+      plannerTotal.textContent = `Total: ${totalMin} min`;
+    }
+
+    function advanceToNextTask() {
+      // Mark current task as done
+      if (currentTaskIndex >= 0 && currentTaskIndex < studyTasks.length) {
+        studyTasks[currentTaskIndex].done = true;
+        saveTasks();
+      }
+      // Find next undone task
+      const nextIdx = studyTasks.findIndex((t, i) => i > currentTaskIndex && !t.done);
+      if (nextIdx === -1) {
+        // All tasks done
+        currentTaskIndex = -1;
+        renderTaskList();
+        return false;
+      }
+      currentTaskIndex = nextIdx;
+      renderTaskList();
+      return true;
+    }
+
+    function startStudyPlan() {
+      if (studyTasks.length === 0) return;
+      currentTaskIndex = studyTasks.findIndex(t => !t.done);
+      if (currentTaskIndex === -1) return;
+
+      const task = studyTasks[currentTaskIndex];
+      renderTaskList();
+
+      // Configure timer for this task
+      inPomo.value = task.minutes;
+      inBreak.value = 5;
+      inReps.value = 1;
+
+      // Switch to timer and start
+      switchView('viewTimer');
+      repsLeft = 1;
+      isWorking = true;
+      totalTimeForPhase = task.minutes * 60;
+      timeLeft = totalTimeForPhase;
+      lblStatus.innerText = task.task;
+      lblTime.style.color = '#64748b';
+      updateDisplay();
+      renderTomatoes();
+
+      isRunning = true;
+      btnStart.dataset.state = 'resume';
+      setMiniMode(true);
+      timer = setInterval(plannerTick, 1000);
+      startDistractionChecking();
+    }
+
+    function plannerTick() {
+      if (timeLeft > 0) {
+        timeLeft--;
+        updateDisplay();
+      } else {
+        // Current task's time is up
+        clearInterval(timer);
+        stopDistractionChecking();
+        isRunning = false;
+
+        const hasNext = advanceToNextTask();
+        if (hasNext) {
+          // Break before next task
+          isWorking = false;
+          totalTimeForPhase = parseInt(inBreak.value) * 60;
+          timeLeft = totalTimeForPhase;
+          lblStatus.innerText = 'Break';
+          lblTime.style.color = '#10b981';
+          if (document.body.classList.contains('mini-mode')) document.body.classList.add('break-mode');
+          ipcRenderer.send('pomodoro-break-start');
+          updateDisplay();
+
+          isRunning = true;
+          timer = setInterval(() => {
+            if (timeLeft > 0) {
+              timeLeft--;
+              updateDisplay();
+            } else {
+              // Break over, start next task
+              clearInterval(timer);
+              document.body.classList.remove('break-mode');
+              const task = studyTasks[currentTaskIndex];
+              inPomo.value = task.minutes;
+
+              isWorking = true;
+              totalTimeForPhase = task.minutes * 60;
+              timeLeft = totalTimeForPhase;
+              lblStatus.innerText = task.task;
+              lblTime.style.color = '#64748b';
+              updateDisplay();
+
+              timer = setInterval(plannerTick, 1000);
+              startDistractionChecking();
+            }
+          }, 1000);
+        } else {
+          // All tasks done!
+          lblStatus.innerText = 'All done!';
+          setMiniMode(false);
+          ipcRenderer.send('pomodoro-finished');
+          switchView('viewPlanner');
+          renderTaskList();
+        }
+      }
+    }
+
+    btnStartPlan.addEventListener('click', startStudyPlan);
+
+    function showTasksUI() {
+      plannerEmpty.style.display = 'none';
+      plannerTasks.style.display = 'flex';
+      plannerTasks.style.flexDirection = 'column';
+      // Show start button only if there are undone tasks
+      btnStartPlan.style.display = studyTasks.some(t => !t.done) ? 'block' : 'none';
+      renderTaskList();
+    }
+
+    function saveTasks() {
+      ipcRenderer.send('update-today-tasks', studyTasks);
+    }
+
+    // Override toggleTask to also persist
+    function toggleTask(idx) {
+      studyTasks[idx].done = !studyTasks[idx].done;
+      saveTasks();
+      if (studyTasks.every(t => t.done)) {
+        ipcRenderer.send('pomodoro-finished');
+      }
+      renderTaskList();
+    }
+
+    ipcRenderer.on('load-study-tasks', (_, tasks) => {
+      // Preserve done state if tasks already have it (from persistence)
+      studyTasks = tasks.map(t => ({ task: t.task, minutes: t.minutes, done: t.done || false }));
+      currentTaskIndex = -1;
+      saveTasks();
+      showTasksUI();
+      switchView('viewPlanner');
+    });
+
+    // Load saved tasks on startup
+    ipcRenderer.invoke('get-today-tasks').then(tasks => {
+      if (tasks && tasks.length > 0) {
+        studyTasks = tasks;
+        currentTaskIndex = -1;
+        showTasksUI();
       }
     });
 

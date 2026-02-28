@@ -223,6 +223,7 @@
     let conversation = null;
     let conversationTranscript = [];
     let autoCloseTimer = null;
+    let shouldAutoClose = false;
 
     const GOODBYE_PHRASES = [
       'bye', 'goodbye', 'see you', 'see ya', 'later', 'good luck',
@@ -230,16 +231,26 @@
       'talk soon', 'catch you', 'take care'
     ];
 
+    async function doClose() {
+      await saveTranscript();
+      if (conversation) {
+        await conversation.endSession();
+        conversation = null;
+      }
+      ipcRenderer.send('ninja-talking-state', 'idle');
+      ipcRenderer.send('close-ninja-chat');
+    }
+
     function scheduleAutoClose(delay = 3000) {
       if (autoCloseTimer) clearTimeout(autoCloseTimer);
-      autoCloseTimer = setTimeout(async () => {
-        await saveTranscript();
-        if (conversation) {
-          await conversation.endSession();
-          conversation = null;
+      autoCloseTimer = setTimeout(() => {
+        autoCloseTimer = null;
+        if (micBtn.classList.contains('speaking')) {
+          // Agent is mid-speech — defer close until it finishes
+          shouldAutoClose = true;
+        } else {
+          doClose();
         }
-        ipcRenderer.send('ninja-talking-state', 'idle');
-        ipcRenderer.send('close-ninja-chat');
       }, delay);
     }
 
@@ -287,12 +298,16 @@
           overrides: memoryContext ? {
             agent: {
               prompt: {
-                prompt: `You are a cute, friendly study ninja assistant. You speak in a casual, encouraging way. Keep responses short (2-3 sentences max).\n\nIMPORTANT: Always start by asking how the student is feeling about studying. Based on their energy level:\n- Low energy / tired / unmotivated = use 15 min work / 5 min break pomodoro (duration: 15, break_duration: 5)\n- Medium / okay / normal = use 25 min work / 5 min break pomodoro (duration: 25, break_duration: 5)\n- High focus / motivated / energized = use 50 min work / 10 min break pomodoro (duration: 50, break_duration: 10)\n\nAfter they tell you how they feel, ask what they are studying. Then offer to start a pomodoro timer. Be encouraging.\n\nYou have access to client tools: start_pomodoro, stop_pomodoro, add_exam, start_quiz. Use them when appropriate.\n\nStudent Memory (use this to personalize your responses):\n${memoryContext}`
+                prompt: `You are a cute, friendly study bear assistant. You speak in a casual, encouraging way. Keep responses short (2-3 sentences max).\n\nYour conversation flow should ALWAYS follow these steps:\n1. First, ask how the student is feeling about studying today (energy level).\n2. Then ask: "What do you need to work on today?" or "What subjects or tasks do you need to study?"\n3. Listen to their answer. Ask follow-up questions if needed to understand their tasks clearly.\n4. Based on their energy level, create a todo list of 2-5 study tasks with time estimates:\n   - Low energy / tired = shorter tasks (10-15 min each)\n   - Medium / okay = normal tasks (20-25 min each)\n   - High focus / energized = longer tasks (30-50 min each)\n5. Read the task list back to them briefly, then call set_study_tasks with the list.\n6. After setting tasks, call start_pomodoro to begin the first task.\n7. Say something encouraging and say goodbye.\n\nIMPORTANT: You MUST always ask what they need to study and create a task list using set_study_tasks before starting the pomodoro. Never skip the task list step.\n\nYou have access to client tools: set_study_tasks, start_pomodoro, stop_pomodoro, add_exam, start_quiz.\n\nStudent Memory (use this to personalize your responses):\n${memoryContext}`
               }
             }
           } : undefined,
 
           clientTools: {
+            set_study_tasks: async (params) => {
+              ipcRenderer.send('voice-set-study-tasks', params.tasks || []);
+              return "Study plan set! Opening your planner.";
+            },
             start_pomodoro: async (params) => {
               ipcRenderer.send('voice-start-pomodoro', {
                 duration: params.duration || 25,
@@ -370,6 +385,10 @@
               micBtn.classList.add('listening');
               modeText.textContent = 'Listening...';
               ipcRenderer.send('ninja-talking-state', 'listening');
+              if (shouldAutoClose) {
+                shouldAutoClose = false;
+                doClose();
+              }
             }
           },
 
@@ -386,25 +405,8 @@
     }
 
     // End conversation
-    document.getElementById('endBtn').addEventListener('click', async () => {
-      await saveTranscript();
-      if (conversation) {
-        await conversation.endSession();
-        conversation = null;
-      }
-      ipcRenderer.send('ninja-talking-state', 'idle');
-      ipcRenderer.send('close-ninja-chat');
-    });
-
-    document.getElementById('chatClose').addEventListener('click', async () => {
-      await saveTranscript();
-      if (conversation) {
-        await conversation.endSession();
-        conversation = null;
-      }
-      ipcRenderer.send('ninja-talking-state', 'idle');
-      ipcRenderer.send('close-ninja-chat');
-    });
+    document.getElementById('endBtn').addEventListener('click', () => doClose());
+    document.getElementById('chatClose').addEventListener('click', () => doClose());
 
     // Start when greeting is received
     ipcRenderer.on('ninja-greeting', () => {

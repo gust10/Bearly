@@ -13,6 +13,7 @@ let blurWin = null;
 let savedQuestions = [];
 let savedExams = [];
 let currentStudyMaterial = ''; // Full text, available during session only
+let todayTasks = []; // Study tasks for today
 
 const MINIMAX_API_KEY = 'sk-api-2Jjgnmytz_ZH7aiIl_0ICkmqSkgYXfWO35ck4atu3Ujcyjv0Bu9ZyUN3wOaBYJnjmkeKHqmath7wFUJKsxCmGMc01QE8tUcPnm_I3ulK_x3s4gMaMOcSLQA';
 const ELEVENLABS_API_KEY = '508eba8b0541bcefd574168a49f09e2ea7debae855e9675eb826ce44d5db2ef6';
@@ -64,6 +65,36 @@ function loadExams() {
     }
   }
   return savedExams;
+}
+
+// Today's study tasks persistence
+function getTodayTasksPath() {
+  const dir = path.join(app.getPath('userData'), 'studyyyy-data');
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  return path.join(dir, 'today-tasks.json');
+}
+
+function saveTodayTasks() {
+  const today = new Date().toISOString().split('T')[0];
+  fs.writeFileSync(getTodayTasksPath(), JSON.stringify({ date: today, tasks: todayTasks }, null, 2));
+}
+
+function loadTodayTasks() {
+  const p = getTodayTasksPath();
+  if (fs.existsSync(p)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(p, 'utf-8'));
+      const today = new Date().toISOString().split('T')[0];
+      if (data.date === today) {
+        todayTasks = data.tasks || [];
+      } else {
+        // Old tasks from a different day — clear them
+        todayTasks = [];
+      }
+    } catch (e) {
+      todayTasks = [];
+    }
+  }
 }
 
 // Learning memory persistence
@@ -585,6 +616,36 @@ function createWindow() {
   });
 
   // === Voice client tool IPC handlers ===
+  ipcMain.on('voice-set-study-tasks', (_, tasks) => {
+    // Save tasks with today's date
+    todayTasks = tasks.map(t => ({ ...t, done: false }));
+    saveTodayTasks();
+
+    if (!pomodoroWin || pomodoroWin.isDestroyed()) {
+      createPomodoroWindow();
+    }
+    const sendTasks = () => {
+      if (pomodoroWin && !pomodoroWin.isDestroyed()) {
+        pomodoroWin.webContents.send('load-study-tasks', todayTasks);
+      }
+    };
+    if (pomodoroWin.webContents.isLoading()) {
+      pomodoroWin.webContents.on('did-finish-load', sendTasks);
+    } else {
+      sendTasks();
+    }
+  });
+
+  ipcMain.handle('get-today-tasks', () => {
+    loadTodayTasks();
+    return todayTasks;
+  });
+
+  ipcMain.on('update-today-tasks', (_, tasks) => {
+    todayTasks = tasks;
+    saveTodayTasks();
+  });
+
   ipcMain.on('voice-start-pomodoro', (_, params) => {
     // Open pomodoro if not open, then send start command
     if (!pomodoroWin || pomodoroWin.isDestroyed()) {
