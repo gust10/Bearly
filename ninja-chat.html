@@ -40,22 +40,10 @@
     .chat-avatar {
       width: 28px;
       height: 28px;
-      background: #2d2d2d;
+      background: url('mov/cover.png') no-repeat center center;
+      background-size: cover;
       border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
       position: relative;
-    }
-
-    .chat-avatar::after {
-      content: '';
-      width: 18px;
-      height: 4px;
-      background: #f87171;
-      border-radius: 2px;
-      position: absolute;
-      top: 10px;
     }
 
     .chat-title {
@@ -203,7 +191,7 @@
       <div class="chat-header-left">
         <div class="chat-avatar"></div>
         <div>
-          <div class="chat-title">Study Ninja</div>
+          <div class="chat-title">Bearly</div>
           <div class="chat-subtitle" id="statusLabel">connecting...</div>
         </div>
       </div>
