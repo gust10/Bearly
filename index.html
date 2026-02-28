@@ -87,6 +87,9 @@
     document.getElementById('sidebarPdfBtn').addEventListener('click', async () => {
       const text = await ipcRenderer.invoke('pick-pdf');
       if (text) {
+        // Store full text as study material for voice session context
+        ipcRenderer.send('set-study-material', text);
+
         const activeTab = document.querySelector('.nav-item.active').dataset.tab;
         if (activeTab === 'active-recall') {
           const arNotes = document.getElementById('arNotes');

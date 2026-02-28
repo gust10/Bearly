@@ -537,6 +537,7 @@
           renderTomatoes(repsLeft); // Update tomatoes automatically
           if (repsLeft <= 0) {
             clearInterval(timer);
+            stopDistractionChecking();
             isRunning = false;
             lblStatus.innerText = 'Completed!';
             inReps.value = 1;
@@ -585,12 +586,14 @@
       document.getElementById('svgStart').innerHTML = '<polygon points="5 3 19 12 5 21 5 3"></polygon>'; // Keep play icon for resume but state is internally resume
       setMiniMode(true);
       timer = setInterval(tick, 1000);
+      startDistractionChecking();
     });
 
     btnPause.addEventListener('click', () => {
       if (!isRunning) return;
       isRunning = false;
       clearInterval(timer);
+      stopDistractionChecking();
       lblStatus.innerText = 'Paused';
       setMiniMode(false);
     });
@@ -598,6 +601,7 @@
     btnReset.addEventListener('click', () => {
       isRunning = false;
       clearInterval(timer);
+      stopDistractionChecking();
       timeLeft = parseInt(inPomo.value) * 60;
       lblStatus.innerText = 'Ready';
       lblTime.style.color = '#64748b';
@@ -648,6 +652,34 @@
     updateDisplay();
     renderTomatoes();
 
+    // === Distraction detection ===
+    const DISTRACTION_INTERVAL = 15000;
+    let distractionCheck = null;
+
+    function startDistractionChecking() {
+      stopDistractionChecking();
+      const scheduleNext = async () => {
+        if (!distractionCheck) return;
+        if (isRunning && isWorking) {
+          const result = await ipcRenderer.invoke('check-distraction');
+          if (result.isDistracting) {
+            ipcRenderer.send('distraction-detected', { site: result.site, timeLeft });
+          }
+        }
+        if (distractionCheck) {
+          distractionCheck = setTimeout(scheduleNext, DISTRACTION_INTERVAL);
+        }
+      };
+      distractionCheck = setTimeout(scheduleNext, DISTRACTION_INTERVAL);
+    }
+
+    function stopDistractionChecking() {
+      if (distractionCheck) {
+        clearTimeout(distractionCheck);
+        distractionCheck = null;
+      }
+    }
+
     // Voice command: start pomodoro with params
     ipcRenderer.on('voice-start-pomodoro', (_, params) => {
       inPomo.value = params.duration || 25;
@@ -669,6 +701,7 @@
       btnStart.dataset.state = 'resume';
       setMiniMode(true);
       timer = setInterval(tick, 1000);
+      startDistractionChecking();
     });
 
     // Voice command: stop/pause pomodoro
@@ -676,6 +709,7 @@
       if (isRunning) {
         isRunning = false;
         clearInterval(timer);
+        stopDistractionChecking();
         lblStatus.innerText = 'Paused';
         setMiniMode(false);
       }

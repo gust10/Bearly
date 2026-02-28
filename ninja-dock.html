@@ -166,8 +166,57 @@
       0%, 100% { transform: translateX(-50%) translateY(0); }
       50% { transform: translateX(-50%) translateY(-3px); }
     }
+
+    /* Distraction speech bubble */
+    .speech-bubble {
+      display: none;
+      position: absolute;
+      bottom: 130px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-family: 'SF Pro Rounded', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      color: #4a4a5a;
+      width: 200px;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      animation: bubble-in 0.3s ease-out;
+      z-index: 100;
+    }
+
+    .speech-bubble::after {
+      content: '';
+      position: absolute;
+      bottom: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-top: 8px solid rgba(255, 255, 255, 0.95);
+    }
+
+    @keyframes bubble-in {
+      from { opacity: 0; transform: translateX(-50%) translateY(10px) scale(0.9); }
+      to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+    }
+
+    @keyframes bubble-out {
+      from { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+      to { opacity: 0; transform: translateX(-50%) translateY(10px) scale(0.9); }
+    }
+
+    .speech-bubble.hiding {
+      animation: bubble-out 0.3s ease-in forwards;
+    }
   </style>
 </head>
+  <div class="speech-bubble" id="speechBubble"></div>
   <div class="dock-ninja" id="dockNinja" style="display: none;"></div>
   <video id="idleVideo" src="mov/breathing.mov" loop muted autoplay style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 140px; height: 140px; object-fit: contain;"></video>
   <video id="bearVideo" src="mov/talking-bear.mov" loop muted autoplay style="display: none; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 140px; height: 140px; object-fit: contain;"></video>
@@ -199,6 +248,33 @@
       } else { // idle
         idleVideo.style.display = 'block';
       }
+    });
+
+    // Distraction alert — show speech bubble from the bear
+    const speechBubble = document.getElementById('speechBubble');
+    let bubbleTimeout = null;
+
+    ipcRenderer.on('distraction-alert', (_, message) => {
+      if (bubbleTimeout) clearTimeout(bubbleTimeout);
+      speechBubble.classList.remove('hiding');
+      speechBubble.textContent = message;
+      speechBubble.style.display = 'block';
+
+      // Show scratch-head animation during alert
+      idleVideo.style.display = 'none';
+      bearVideo.style.display = 'none';
+      scratchVideo.style.display = 'block';
+
+      bubbleTimeout = setTimeout(() => {
+        speechBubble.classList.add('hiding');
+        setTimeout(() => {
+          speechBubble.style.display = 'none';
+          speechBubble.classList.remove('hiding');
+          // Return to idle
+          scratchVideo.style.display = 'none';
+          idleVideo.style.display = 'block';
+        }, 300);
+      }, 5000);
     });
 
     ipcRenderer.on('play-confetti', () => {

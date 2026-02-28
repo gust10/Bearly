@@ -233,6 +233,7 @@
     const statusLabel = document.getElementById('statusLabel');
 
     let conversation = null;
+    let conversationTranscript = [];
 
     function addMessage(text, sender) {
       // Check if last message is same sender — update it instead
@@ -255,13 +256,28 @@
       }
     }
 
+    async function saveTranscript() {
+      if (conversationTranscript.length > 0) {
+        ipcRenderer.send('save-conversation-transcript', conversationTranscript.join('\n'));
+        conversationTranscript = [];
+      }
+    }
+
     async function startConversation() {
       try {
         const signedUrl = await ipcRenderer.invoke('get-signed-url');
+        const memoryContext = await ipcRenderer.invoke('get-learning-profile');
 
         conversation = await Conversation.startSession({
           signedUrl,
           connectionType: 'websocket',
+          overrides: memoryContext ? {
+            agent: {
+              prompt: {
+                prompt: `You are a cute, friendly study ninja assistant. You speak in a casual, encouraging way. Keep responses short (2-3 sentences max).\n\nIMPORTANT: Always start by asking how the student is feeling about studying. Based on their energy level:\n- Low energy / tired / unmotivated = use 15 min work / 5 min break pomodoro (duration: 15, break_duration: 5)\n- Medium / okay / normal = use 25 min work / 5 min break pomodoro (duration: 25, break_duration: 5)\n- High focus / motivated / energized = use 50 min work / 10 min break pomodoro (duration: 50, break_duration: 10)\n\nAfter they tell you how they feel, ask what they are studying. Then offer to start a pomodoro timer. Be encouraging.\n\nYou have access to client tools: start_pomodoro, stop_pomodoro, add_exam, start_quiz. Use them when appropriate.\n\nStudent Memory (use this to personalize your responses):\n${memoryContext}`
+              }
+            }
+          } : undefined,
 
           clientTools: {
             start_pomodoro: async (params) => {
@@ -309,12 +325,18 @@
             if (message.source === 'user') {
               if (message.message) {
                 addMessage(message.message, 'user');
-                if (message.type === 'final') finalizeLastMessage('user');
+                if (message.type === 'final') {
+                  finalizeLastMessage('user');
+                  conversationTranscript.push('Student: ' + message.message);
+                }
               }
             } else if (message.source === 'ai') {
               if (message.message) {
                 addMessage(message.message, 'ninja');
-                if (message.type === 'final') finalizeLastMessage('ninja');
+                if (message.type === 'final') {
+                  finalizeLastMessage('ninja');
+                  conversationTranscript.push('Ninja: ' + message.message);
+                }
               }
             }
           },
@@ -347,6 +369,7 @@
 
     // End conversation
     document.getElementById('endBtn').addEventListener('click', async () => {
+      await saveTranscript();
       if (conversation) {
         await conversation.endSession();
         conversation = null;
@@ -356,6 +379,7 @@
     });
 
     document.getElementById('chatClose').addEventListener('click', async () => {
+      await saveTranscript();
       if (conversation) {
         await conversation.endSession();
         conversation = null;

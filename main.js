@@ -1,4 +1,5 @@
 const { app, BrowserWindow, screen, ipcMain, dialog } = require('electron');
+const { execSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const pdfParse = require('pdf-parse');
@@ -10,6 +11,7 @@ let chatWin = null;
 let calendarWin = null;
 let savedQuestions = [];
 let savedExams = [];
+let currentStudyMaterial = ''; // Full text, available during session only
 
 const MINIMAX_API_KEY = 'sk-api-2Jjgnmytz_ZH7aiIl_0ICkmqSkgYXfWO35ck4atu3Ujcyjv0Bu9ZyUN3wOaBYJnjmkeKHqmath7wFUJKsxCmGMc01QE8tUcPnm_I3ulK_x3s4gMaMOcSLQA';
 const ELEVENLABS_API_KEY = '508eba8b0541bcefd574168a49f09e2ea7debae855e9675eb826ce44d5db2ef6';
@@ -61,6 +63,158 @@ function loadExams() {
     }
   }
   return savedExams;
+}
+
+// Learning memory persistence
+function getMemoryPath() {
+  const dir = path.join(app.getPath('userData'), 'studyyyy-data');
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  return path.join(dir, 'memory.json');
+}
+
+function loadMemory() {
+  const p = getMemoryPath();
+  if (fs.existsSync(p)) {
+    try {
+      return JSON.parse(fs.readFileSync(p, 'utf-8'));
+    } catch (e) {}
+  }
+  return {
+    learningProfile: { subjects: [], strengths: [], struggles: [], preferredStyle: '', energyPattern: '' },
+    entries: []
+  };
+}
+
+function saveMemory(memory) {
+  fs.writeFileSync(getMemoryPath(), JSON.stringify(memory, null, 2));
+}
+
+async function extractMemoryFromTranscript(transcript) {
+  try {
+    const res = await fetch('https://api.minimax.io/v1/text/chatcompletion_v2', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + MINIMAX_API_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'MiniMax-M2',
+        messages: [
+          {
+            role: 'system',
+            content: 'Extract learning insights from this study conversation transcript. Return ONLY a JSON object with these keys:\n- "summary": one sentence summary of the conversation\n- "topics": array of subject/topic strings discussed\n- "insights": array of specific things learned, struggled with, or preferences noted\n- "strengths": array of topics the user seems confident about\n- "struggles": array of topics the user needs help with\n- "preferredStyle": string describing learning preference if mentioned (or empty string)\n- "energyPattern": string describing energy level if mentioned (or empty string)\nNo markdown, no explanation, just the JSON object.'
+          },
+          { role: 'user', content: transcript }
+        ],
+        temperature: 0.3,
+        max_tokens: 512,
+      }),
+    });
+    const data = await res.json();
+    const text = data.choices[0].message.content.trim();
+    const jsonStr = text.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
+    return JSON.parse(jsonStr);
+  } catch (e) {
+    console.error('Memory extraction failed:', e);
+    return null;
+  }
+}
+
+function mergeMemory(existing, extracted, source) {
+  const entry = {
+    timestamp: new Date().toISOString(),
+    source,
+    summary: extracted.summary || '',
+    topics: extracted.topics || [],
+    insights: extracted.insights || []
+  };
+  existing.entries.push(entry);
+
+  // Keep last 50 entries
+  if (existing.entries.length > 50) {
+    existing.entries = existing.entries.slice(-50);
+  }
+
+  // Merge profile arrays (deduplicate)
+  const addUnique = (arr, items) => [...new Set([...arr, ...items])];
+  if (extracted.subjects || extracted.topics) {
+    existing.learningProfile.subjects = addUnique(existing.learningProfile.subjects, extracted.topics || []);
+  }
+  if (extracted.strengths) {
+    existing.learningProfile.strengths = addUnique(existing.learningProfile.strengths, extracted.strengths);
+  }
+  if (extracted.struggles) {
+    existing.learningProfile.struggles = addUnique(existing.learningProfile.struggles, extracted.struggles);
+  }
+  if (extracted.preferredStyle) {
+    existing.learningProfile.preferredStyle = extracted.preferredStyle;
+  }
+  if (extracted.energyPattern) {
+    existing.learningProfile.energyPattern = extracted.energyPattern;
+  }
+
+  return existing;
+}
+
+function buildMemoryContext() {
+  const memory = loadMemory();
+  const profile = memory.learningProfile;
+  const recentEntries = memory.entries.slice(-5);
+
+  let context = '';
+  if (profile.subjects.length > 0) context += `Subjects studied: ${profile.subjects.join(', ')}.\n`;
+  if (profile.strengths.length > 0) context += `Strengths: ${profile.strengths.join(', ')}.\n`;
+  if (profile.struggles.length > 0) context += `Struggles with: ${profile.struggles.join(', ')}.\n`;
+  if (profile.preferredStyle) context += `Learning style: ${profile.preferredStyle}.\n`;
+  if (profile.energyPattern) context += `Energy pattern: ${profile.energyPattern}.\n`;
+
+  if (recentEntries.length > 0) {
+    context += '\nRecent sessions:\n';
+    recentEntries.forEach(e => {
+      context += `- ${e.summary}\n`;
+    });
+  }
+
+  // Include full study material for current session if available
+  if (currentStudyMaterial) {
+    context += '\n--- Current Study Material ---\n';
+    // Cap at 4000 chars to avoid overloading the agent prompt
+    context += currentStudyMaterial.length > 4000
+      ? currentStudyMaterial.substring(0, 4000) + '\n... (truncated)'
+      : currentStudyMaterial;
+    context += '\n--- End Study Material ---\n';
+  }
+
+  return context;
+}
+
+async function summarizeStudyMaterial(text) {
+  try {
+    const res = await fetch('https://api.minimax.io/v1/text/chatcompletion_v2', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + MINIMAX_API_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'MiniMax-M2',
+        messages: [
+          {
+            role: 'system',
+            content: 'Summarize this study material into a brief description (2-3 sentences max). Include the subject, main topics covered, and key concepts. Return ONLY the summary text, nothing else.'
+          },
+          { role: 'user', content: text.substring(0, 6000) }
+        ],
+        temperature: 0.3,
+        max_tokens: 256,
+      }),
+    });
+    const data = await res.json();
+    return data.choices[0].message.content.trim();
+  } catch (e) {
+    console.error('Study material summarization failed:', e);
+    return null;
+  }
 }
 
 function createWindow() {
@@ -353,8 +507,8 @@ function createWindow() {
   });
 
   // === Dock Ninja (sits above dock) ===
-  const dockW = 160;
-  const dockH = 160;
+  const dockW = 220;
+  const dockH = 260;
   dockNinjaWin = new BrowserWindow({
     width: dockW,
     height: dockH,
@@ -469,6 +623,144 @@ function createWindow() {
     if (questions.length > 0) {
       openNinja(questions[Math.floor(Math.random() * questions.length)]);
     }
+  });
+
+  // === Distraction detection during pomodoro ===
+  const DISTRACTING_SITES = ['youtube.com', 'twitter.com', 'x.com', 'facebook.com', 'instagram.com', 'tiktok.com', 'reddit.com'];
+  let lastNudgeTime = 0;
+
+  ipcMain.handle('check-distraction', async () => {
+    try {
+      let appName = '';
+      let url = '';
+
+      if (process.platform === 'darwin') {
+        // macOS: use AppleScript to get frontmost app and browser URL
+        appName = execSync(
+          "osascript -e 'tell application \"System Events\" to name of first process whose frontmost is true'",
+          { encoding: 'utf-8', timeout: 3000 }
+        ).trim();
+
+        if (appName.includes('Chrome') || appName.includes('Chromium')) {
+          try {
+            url = execSync(
+              "osascript -e 'tell application \"Google Chrome\" to return URL of active tab of front window'",
+              { encoding: 'utf-8', timeout: 3000 }
+            ).trim();
+          } catch (e) {}
+        } else if (appName.includes('Safari')) {
+          try {
+            url = execSync(
+              "osascript -e 'tell application \"Safari\" to return URL of front document'",
+              { encoding: 'utf-8', timeout: 3000 }
+            ).trim();
+          } catch (e) {}
+        } else if (appName.includes('Arc')) {
+          try {
+            url = execSync(
+              "osascript -e 'tell application \"Arc\" to return URL of active tab of front window'",
+              { encoding: 'utf-8', timeout: 3000 }
+            ).trim();
+          } catch (e) {}
+        }
+      } else if (process.platform === 'win32') {
+        // Windows: use PowerShell to get active window title
+        const windowTitle = execSync(
+          'powershell -NoProfile -Command "Add-Type @\\"\\nusing System;\\nusing System.Runtime.InteropServices;\\npublic class Win32 {\\n  [DllImport(\\"user32.dll\\")]\\n  public static extern IntPtr GetForegroundWindow();\\n  [DllImport(\\"user32.dll\\", SetLastError=true)]\\n  public static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder text, int count);\\n}\\n\\"@; $h = [Win32]::GetForegroundWindow(); $sb = New-Object System.Text.StringBuilder 256; [Win32]::GetWindowText($h, $sb, 256) | Out-Null; $sb.ToString()"',
+          { encoding: 'utf-8', timeout: 3000 }
+        ).trim();
+        appName = windowTitle; // Window title includes site name (e.g. "YouTube - Google Chrome")
+      }
+
+      const matchedSite = DISTRACTING_SITES.find(site =>
+        url.includes(site) || appName.toLowerCase().includes(site.split('.')[0])
+      );
+
+      return { isDistracting: !!matchedSite, appName, url, site: matchedSite || null };
+    } catch (e) {
+      return { isDistracting: false, appName: null, url: null, site: null };
+    }
+  });
+
+  ipcMain.on('distraction-detected', (_, data) => {
+    const now = Date.now();
+    if (now - lastNudgeTime < 60000) return; // Don't spam — 60s minimum gap
+    lastNudgeTime = now;
+
+    const siteName = (data.site || '').split('.')[0];
+    const displayName = siteName.charAt(0).toUpperCase() + siteName.slice(1);
+    const minutesLeft = Math.ceil((data.timeLeft || 0) / 60);
+
+    const nudges = [
+      `Hey! ${displayName} is tempting, but you've got ${minutesLeft} min left. You got this!`,
+      `Psst! Focus mode is on! ${displayName} can wait ${minutesLeft} more minutes.`,
+      `Ninja says: back to studying! Only ${minutesLeft} min left on your timer.`,
+      `${displayName}? Really? You're so close! ${minutesLeft} min to go!`
+    ];
+    const message = nudges[Math.floor(Math.random() * nudges.length)];
+
+    if (dockNinjaWin && !dockNinjaWin.isDestroyed()) {
+      dockNinjaWin.webContents.send('distraction-alert', message);
+    }
+  });
+
+  // === Learning memory IPC handlers ===
+  ipcMain.on('save-conversation-transcript', async (_, transcript) => {
+    if (!transcript || transcript.length < 20) return;
+    const extracted = await extractMemoryFromTranscript(transcript);
+    if (extracted) {
+      let memory = loadMemory();
+      memory = mergeMemory(memory, extracted, 'voice_chat');
+      saveMemory(memory);
+    }
+
+    // Summarize study material if it was used during this session
+    if (currentStudyMaterial) {
+      const summary = await summarizeStudyMaterial(currentStudyMaterial);
+      if (summary) {
+        let memory = loadMemory();
+        memory.entries.push({
+          timestamp: new Date().toISOString(),
+          source: 'study_material',
+          summary,
+          topics: [],
+          insights: []
+        });
+        if (memory.entries.length > 50) memory.entries = memory.entries.slice(-50);
+        saveMemory(memory);
+      }
+      currentStudyMaterial = '';
+    }
+  });
+
+  ipcMain.on('save-study-event', (_, event) => {
+    let memory = loadMemory();
+    const entry = {
+      timestamp: new Date().toISOString(),
+      source: event.source || 'unknown',
+      summary: event.summary || '',
+      topics: event.topics || [],
+      insights: event.insights || []
+    };
+    memory.entries.push(entry);
+    // Update subjects
+    if (event.topics && event.topics.length > 0) {
+      memory.learningProfile.subjects = [...new Set([...memory.learningProfile.subjects, ...event.topics])];
+    }
+    if (memory.entries.length > 50) memory.entries = memory.entries.slice(-50);
+    saveMemory(memory);
+  });
+
+  ipcMain.handle('get-learning-profile', () => {
+    return buildMemoryContext();
+  });
+
+  ipcMain.on('set-study-material', (_, text) => {
+    currentStudyMaterial = text || '';
+  });
+
+  ipcMain.on('clear-study-material', () => {
+    currentStudyMaterial = '';
   });
 
   // ElevenLabs signed URL for voice conversation

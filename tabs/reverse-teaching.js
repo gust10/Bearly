@@ -114,7 +114,14 @@ function initReverseTeaching() {
     window.showScreen('feedbackScreen');
     feedbackContent.innerHTML = '';
     chatHistory = [{ role: 'user', content: `Topic: ${currentTopic}\nExplanation: ${explanation}` }];
-    
+
+    // Log to learning memory
+    ipcRenderer.send('save-study-event', {
+      source: 'reverse_teaching',
+      topics: [currentTopic],
+      summary: `Practiced explaining "${currentTopic}" via reverse teaching`
+    });
+
     await callMinimax();
   });
 

@@ -43,6 +43,9 @@ function initActiveRecall() {
     const notes = arNotes.value.trim();
     if (!notes) return;
 
+    // Store notes as study material for voice session context
+    ipcRenderer.send('set-study-material', notes);
+
     arInputView.style.display = 'none';
     arLoading.style.display = 'block';
 
@@ -81,6 +84,13 @@ function initActiveRecall() {
 
       // Save questions and start recall timer
       ipcRenderer.send('start-recall-timer', questions);
+
+      // Log to learning memory
+      ipcRenderer.send('save-study-event', {
+        source: 'active_recall',
+        topics: questions.map(q => q.question.split(' ').slice(0, 5).join(' ')),
+        summary: `Generated ${questions.length} active recall questions from study notes`
+      });
     } catch (err) {
       console.error(err);
       arLoading.style.display = 'none';
