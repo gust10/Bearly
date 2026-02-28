@@ -282,20 +282,10 @@
       <button class="bubble-dismiss" id="nDismiss">Got it!</button>
     </div>
 
-    <div class="ninja">
-      <div class="ninja-head"></div>
-      <div class="ninja-headband"></div>
-      <div class="ninja-eyes">
-        <div class="ninja-eye"></div>
-        <div class="ninja-eye"></div>
-      </div>
-      <div class="ninja-body"></div>
-      <div class="ninja-belt"></div>
-      <div class="ninja-arm-l"></div>
-      <div class="ninja-arm-r"></div>
-      <div class="ninja-leg-l"></div>
-      <div class="ninja-leg-r"></div>
-    </div>
+    <div class="ninja" id="bigNinja" style="display: none;"></div>
+    <video id="idleVideo" src="mov/breathing.mov" loop muted autoplay style="width: 140px; height: 140px; object-fit: contain;"></video>
+    <video id="bearVideo" src="mov/talking-bear.mov" loop muted autoplay style="display: none; width: 140px; height: 140px; object-fit: contain;"></video>
+    <video id="scratchVideo" src="mov/scratch-head.mov" loop muted autoplay style="display: none; width: 140px; height: 140px; object-fit: contain;"></video>
   </div>
 
   <script>
@@ -318,6 +308,24 @@
 
     document.getElementById('nDismiss').addEventListener('click', () => {
       ipcRenderer.send('dismiss-ninja');
+    });
+
+    const bearVideo = document.getElementById('bearVideo');
+    const idleVideo = document.getElementById('idleVideo');
+    const scratchVideo = document.getElementById('scratchVideo');
+
+    ipcRenderer.on('ninja-state', (event, state) => {
+      if (idleVideo) idleVideo.style.display = 'none';
+      if (bearVideo) bearVideo.style.display = 'none';
+      if (scratchVideo) scratchVideo.style.display = 'none';
+
+      if (state === 'speaking') {
+        if (bearVideo) bearVideo.style.display = 'block';
+      } else if (state === 'listening') {
+        if (scratchVideo) scratchVideo.style.display = 'block';
+      } else { // idle
+        if (idleVideo) idleVideo.style.display = 'block';
+      }
     });
   </script>
 </body>

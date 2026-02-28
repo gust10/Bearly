@@ -353,8 +353,8 @@ function createWindow() {
   });
 
   // === Dock Ninja (sits above dock) ===
-  const dockW = 90;
-  const dockH = 110;
+  const dockW = 160;
+  const dockH = 160;
   dockNinjaWin = new BrowserWindow({
     width: dockW,
     height: dockH,
@@ -411,6 +411,15 @@ function createWindow() {
 
   ipcMain.on('close-ninja-chat', () => {
     if (chatWin && !chatWin.isDestroyed()) chatWin.close();
+  });
+
+  ipcMain.on('ninja-talking-state', (event, isTalking) => {
+    if (dockNinjaWin && !dockNinjaWin.isDestroyed()) {
+      dockNinjaWin.webContents.send('ninja-state', isTalking);
+    }
+    if (ninjaWin && !ninjaWin.isDestroyed()) {
+      ninjaWin.webContents.send('ninja-state', isTalking);
+    }
   });
 
   // === Voice client tool IPC handlers ===
