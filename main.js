@@ -7,7 +7,9 @@ let quizWin = null;
 let ninjaWin = null;
 let dockNinjaWin = null;
 let chatWin = null;
+let calendarWin = null;
 let savedQuestions = [];
+let savedExams = [];
 
 const MINIMAX_API_KEY = 'sk-api-2Jjgnmytz_ZH7aiIl_0ICkmqSkgYXfWO35ck4atu3Ujcyjv0Bu9ZyUN3wOaBYJnjmkeKHqmath7wFUJKsxCmGMc01QE8tUcPnm_I3ulK_x3s4gMaMOcSLQA';
 const ELEVENLABS_API_KEY = '508eba8b0541bcefd574168a49f09e2ea7debae855e9675eb826ce44d5db2ef6';
@@ -35,6 +37,30 @@ function loadQuestions() {
     }
   }
   return savedQuestions;
+}
+
+// Exams persistence
+function getExamsPath() {
+  const dir = path.join(app.getPath('userData'), 'studyyyy-data');
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  return path.join(dir, 'exams.json');
+}
+
+function saveExams(exams) {
+  savedExams = exams;
+  fs.writeFileSync(getExamsPath(), JSON.stringify(exams, null, 2));
+}
+
+function loadExams() {
+  const p = getExamsPath();
+  if (fs.existsSync(p)) {
+    try {
+      savedExams = JSON.parse(fs.readFileSync(p, 'utf-8'));
+    } catch (e) {
+      savedExams = [];
+    }
+  }
+  return savedExams;
 }
 
 function createWindow() {
@@ -122,17 +148,15 @@ function createWindow() {
       if (mode === 'mini') {
         pomodoroWin.setSize(150, 150);
         pomodoroWin.setPosition(20, 20); // Top left area
-      } else if (mode === 'menu') {
+      } else if (win && !win.isDestroyed()) {
         const [x, y] = win.getPosition();
-        pomodoroWin.setSize(250, 190);
-        pomodoroWin.setPosition(x + winWidth, y);
-      } else if (mode === 'timer') {
-        const [x, y] = win.getPosition();
-        pomodoroWin.setSize(250, 420);
-        pomodoroWin.setPosition(x + winWidth, y);
-      } else if (mode === 'planner') {
-        const [x, y] = win.getPosition();
-        pomodoroWin.setSize(250, 420); // Default full size for planner
+        if (mode === 'menu') {
+          pomodoroWin.setSize(250, 190);
+        } else if (mode === 'timer') {
+          pomodoroWin.setSize(250, 420);
+        } else if (mode === 'planner') {
+          pomodoroWin.setSize(250, 420);
+        }
         pomodoroWin.setPosition(x + winWidth, y);
       }
     }
@@ -392,6 +416,87 @@ function createWindow() {
     const data = await res.json();
     return data.signed_url;
   });
+
+  // === Calendar window ===
+  ipcMain.on('open-calendar', () => {
+    if (calendarWin && !calendarWin.isDestroyed()) {
+      calendarWin.focus();
+      return;
+    }
+
+    const cw = 400;
+    const ch = 500;
+
+    calendarWin = new BrowserWindow({
+      width: cw,
+      height: ch,
+      x: Math.round((screenW - cw) / 2),
+      y: workY + Math.round((workHeight - ch) / 2),
+      frame: false,
+      alwaysOnTop: true,
+      resizable: false,
+      movable: true,
+      transparent: true,
+      hasShadow: true,
+      webPreferences: {
+        nodeIntegration: true,
+        contextIsolation: false,
+      },
+    });
+
+    calendarWin.loadFile('calendar.html');
+    calendarWin.on('closed', () => { calendarWin = null; });
+  });
+
+  ipcMain.on('close-calendar', () => {
+    if (calendarWin && !calendarWin.isDestroyed()) calendarWin.close();
+  });
+
+  // Exam persistence IPC
+  ipcMain.handle('get-exams', () => {
+    return loadExams();
+  });
+
+  ipcMain.on('save-exams', (_, exams) => {
+    saveExams(exams);
+  });
+
+  // Spaced repetition checker — runs on startup and hourly
+  function checkSpacedRepetition() {
+    const exams = loadExams();
+    if (exams.length === 0) return;
+
+    const today = new Date();
+    const todayStr = today.getFullYear() + '-' +
+      String(today.getMonth() + 1).padStart(2, '0') + '-' +
+      String(today.getDate()).padStart(2, '0');
+
+    const REVIEW_OFFSETS = [14, 7, 3, 1];
+
+    for (const exam of exams) {
+      const examDate = new Date(exam.date + 'T00:00:00');
+      for (const offset of REVIEW_OFFSETS) {
+        const reviewDate = new Date(examDate);
+        reviewDate.setDate(reviewDate.getDate() - offset);
+        const reviewStr = reviewDate.getFullYear() + '-' +
+          String(reviewDate.getMonth() + 1).padStart(2, '0') + '-' +
+          String(reviewDate.getDate()).padStart(2, '0');
+
+        if (reviewStr === todayStr) {
+          const daysUntil = Math.ceil((examDate - today.setHours(0,0,0,0)) / (1000*60*60*24));
+          openNinja({
+            question: `Time to review for ${exam.subject}! Your exam is in ${daysUntil} day${daysUntil !== 1 ? 's' : ''}.`,
+            answer: `Study tip: Focus on the areas you find most challenging for ${exam.subject}.`
+          });
+          return; // Only show one reminder at a time
+        }
+      }
+    }
+  }
+
+  // Check on startup (delayed) and every hour
+  setTimeout(checkSpacedRepetition, 5000);
+  setInterval(checkSpacedRepetition, 60 * 60 * 1000);
 
   // PDF file picker
   ipcMain.handle('pick-pdf', async () => {

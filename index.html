@@ -32,6 +32,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
         Flashcards
       </button>
+      <button class="nav-item" id="sidebarCalendarBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Calendar
+      </button>
       <button class="nav-item" id="sidebarPdfBtn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         Upload PDF
@@ -73,6 +77,11 @@
     if (initActiveRecall) initActiveRecall();
     if (initReverseTeaching) initReverseTeaching();
     if (initFlashcards) initFlashcards();
+
+    // Calendar button
+    document.getElementById('sidebarCalendarBtn').addEventListener('click', () => {
+      ipcRenderer.send('open-calendar');
+    });
 
     // Sidebar PDF button logic
     document.getElementById('sidebarPdfBtn').addEventListener('click', async () => {
