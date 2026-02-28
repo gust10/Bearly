@@ -9,6 +9,7 @@ let ninjaWin = null;
 let dockNinjaWin = null;
 let chatWin = null;
 let calendarWin = null;
+let blurWin = null;
 let savedQuestions = [];
 let savedExams = [];
 let currentStudyMaterial = ''; // Full text, available during session only
@@ -636,10 +637,15 @@ function createWindow() {
 
       if (process.platform === 'darwin') {
         // macOS: use AppleScript to get frontmost app and browser URL
-        appName = execSync(
-          "osascript -e 'tell application \"System Events\" to name of first process whose frontmost is true'",
-          { encoding: 'utf-8', timeout: 3000 }
-        ).trim();
+        try {
+          appName = execSync(
+            "osascript -e 'tell application \"System Events\" to name of first process whose frontmost is true'",
+            { encoding: 'utf-8', timeout: 3000 }
+          ).trim();
+        } catch (e) {
+          console.error('Failed to get frontmost app:', e.message);
+          return { isDistracting: false, appName: null, url: null, site: null };
+        }
 
         if (appName.includes('Chrome') || appName.includes('Chromium')) {
           try {
@@ -676,8 +682,10 @@ function createWindow() {
         url.includes(site) || appName.toLowerCase().includes(site.split('.')[0])
       );
 
+      console.log(`[Distraction check] App: "${appName}", URL: "${url}", Match: ${matchedSite || 'none'}`);
       return { isDistracting: !!matchedSite, appName, url, site: matchedSite || null };
     } catch (e) {
+      console.error('[Distraction check] Error:', e.message);
       return { isDistracting: false, appName: null, url: null, site: null };
     }
   });
@@ -701,6 +709,53 @@ function createWindow() {
 
     if (dockNinjaWin && !dockNinjaWin.isDestroyed()) {
       dockNinjaWin.webContents.send('distraction-alert', message);
+    }
+
+    // Show fullscreen blur overlay
+    if (!blurWin || blurWin.isDestroyed()) {
+      const display = screen.getPrimaryDisplay();
+      const { width: sw, height: sh } = display.size;
+
+      blurWin = new BrowserWindow({
+        width: sw,
+        height: sh,
+        x: 0,
+        y: 0,
+        frame: false,
+        alwaysOnTop: true,
+        transparent: true,
+        hasShadow: false,
+        skipTaskbar: true,
+        resizable: false,
+        focusable: true,
+        vibrancy: 'under-window',
+        visualEffectState: 'active',
+        backgroundColor: '#00000000',
+        webPreferences: {
+          nodeIntegration: true,
+          contextIsolation: false,
+        },
+      });
+
+      blurWin.loadFile('blur-overlay.html');
+      blurWin.webContents.on('did-finish-load', () => {
+        blurWin.webContents.send('show-blur', message);
+      });
+      blurWin.on('closed', () => { blurWin = null; });
+
+      // Auto-close after 5 seconds (same as speech bubble)
+      setTimeout(() => {
+        if (blurWin && !blurWin.isDestroyed()) {
+          blurWin.webContents.send('auto-close');
+        }
+      }, 5000);
+    }
+  });
+
+  ipcMain.on('close-blur-overlay', () => {
+    if (blurWin && !blurWin.isDestroyed()) {
+      blurWin.close();
+      blurWin = null;
     }
   });
 
