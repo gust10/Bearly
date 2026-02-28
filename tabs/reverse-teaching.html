@@ -44,8 +44,35 @@
     </div>
 
     <div class="input-group" style="padding-top: 8px; padding-bottom: 6px;">
-      <button class="secondary-btn" title="Coming Soon">Generate Flashcards</button>
-      <button class="secondary-btn" title="Coming Soon">Generate Questions</button>
+      <button class="secondary-btn" id="openFcModalBtn">Generate Flashcards</button>
     </div>
   </div>
 </div>
+
+<!-- Flashcard Modal -->
+<div class="modal-overlay" id="flashcardModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+  <div class="modal-content" style="background: white; width: 90%; max-width: 320px; padding: 20px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+    <div style="font-size: 16px; font-weight: 800; color: #4a4a5a; margin-bottom: 15px; text-align: center;">Generate Flashcards</div>
+    
+    <div style="margin-bottom: 12px;">
+      <label style="font-size: 11px; font-weight: 700; color: #94a3b8; display: block; margin-bottom: 4px;">DECK NAME</label>
+      <input type="text" id="fcDeckName" class="input-small" placeholder="e.g. French Verbs" style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 8px;">
+    </div>
+    
+    <div style="margin-bottom: 12px;">
+      <label style="font-size: 11px; font-weight: 700; color: #94a3b8; display: block; margin-bottom: 4px;">NUMBER OF CARDS</label>
+      <input type="number" id="fcCardCount" value="5" min="1" max="20" style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 8px;">
+    </div>
+    
+    <div style="margin-bottom: 20px;">
+      <label id="msgCountLabel" style="font-size: 11px; font-weight: 700; color: #94a3b8; display: block; margin-bottom: 4px;">MESSAGES TO INCLUDE (1-10)</label>
+      <input type="number" id="fcMsgCount" value="5" min="1" style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 8px;">
+    </div>
+
+    <div style="display: flex; gap: 10px;">
+      <button id="cancelFcBtn" style="flex: 1; padding: 10px; border: none; border-radius: 8px; background: #f1f5f9; color: #64748b; font-weight: 700; cursor: pointer;">Cancel</button>
+      <button id="generateFcBtn" style="flex: 1; padding: 10px; border: none; border-radius: 8px; background: linear-gradient(135deg, #e8a0bf, #c4b5fd); color: white; font-weight: 800; cursor: pointer;">Generate</button>
+    </div>
+  </div>
+</div>
+
