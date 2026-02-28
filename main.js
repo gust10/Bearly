@@ -142,6 +142,11 @@ function createWindow() {
     quizWin.on('closed', () => { quizWin = null; });
   });
 
+  ipcMain.on('set-window-height', (event, newHeight) => {
+    const [width] = win.getSize();
+    win.setSize(width, newHeight, true);
+  });
+
   ipcMain.on('close-quiz', () => {
     if (quizWin && !quizWin.isDestroyed()) quizWin.close();
   });

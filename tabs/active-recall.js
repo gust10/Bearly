@@ -36,11 +36,7 @@ function initActiveRecall() {
     }
   });
 
-  // PDF upload
-  document.getElementById('arPdfBtn').addEventListener('click', async () => {
-    const text = await ipcRenderer.invoke('pick-pdf');
-    if (text) arNotes.value = text;
-  });
+/* Removed PDF picker listener - handled by sidebar now */
 
   // Generate questions and open quiz overlay
   arGenerateBtn.addEventListener('click', async () => {
