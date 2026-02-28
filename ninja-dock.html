@@ -222,6 +222,7 @@
   <video id="bearVideo" src="mov/talking-bear.mov" loop muted autoplay style="display: none; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 140px; height: 140px; object-fit: contain;"></video>
   <video id="scratchVideo" src="mov/scratch-head.mov" loop muted autoplay style="display: none; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 140px; height: 140px; object-fit: contain;"></video>
   <video id="confettiVideo" src="mov/confetti.mov" muted playsinline style="display: none; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 140px; height: 140px; object-fit: contain;"></video>
+  <video id="yawnVideo" src="mov/yawn.mov" muted playsinline style="display: none; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 140px; height: 140px; object-fit: contain;"></video>
 
   <script>
     const { ipcRenderer } = require('electron');
@@ -230,6 +231,9 @@
     const idleVideo = document.getElementById('idleVideo');
     const scratchVideo = document.getElementById('scratchVideo');
     const confettiVideo = document.getElementById('confettiVideo');
+    const yawnVideo = document.getElementById('yawnVideo');
+    const speechBubble = document.getElementById('speechBubble');
+    let bubbleTimeout = null;
 
     document.body.addEventListener('click', () => {
       ipcRenderer.send('open-ninja-chat');
@@ -240,6 +244,9 @@
       bearVideo.style.display = 'none';
       scratchVideo.style.display = 'none';
       confettiVideo.style.display = 'none';
+      yawnVideo.style.display = 'none';
+      speechBubble.style.display = 'none';
+      if (bubbleTimeout) clearTimeout(bubbleTimeout);
 
       if (state === 'speaking') {
         bearVideo.style.display = 'block';
@@ -251,9 +258,6 @@
     });
 
     // Distraction alert — show speech bubble from the bear
-    const speechBubble = document.getElementById('speechBubble');
-    let bubbleTimeout = null;
-
     ipcRenderer.on('distraction-alert', (_, message) => {
       if (bubbleTimeout) clearTimeout(bubbleTimeout);
       speechBubble.classList.remove('hiding');
@@ -289,6 +293,46 @@
       confettiVideo.onended = () => {
         confettiVideo.style.display = 'none';
         idleVideo.style.display = 'block';
+      };
+    });
+
+    ipcRenderer.on('play-yawn', () => {
+      idleVideo.style.display = 'none';
+      bearVideo.style.display = 'none';
+      scratchVideo.style.display = 'none';
+      confettiVideo.style.display = 'none';
+      
+      yawnVideo.style.display = 'block';
+      yawnVideo.currentTime = 0;
+      yawnVideo.play();
+
+      const phrases = [
+        "Fantastic work! Stand up and give your legs a good stretch. You’ve earned a break from that chair. I'll keep watch while you're gone!",
+        "Time to rest those eyes! Look at something 20 feet away for a bit. Your screen will still be here when you get back, I promise.",
+        "Mission accomplished! Now, go grab a glass of water. Hydrated brains think 20% faster, it’s science! Go on, I’m timing you.",
+        "That was a heavy lift. Take a deep breath and let your brain reset. No thinking about this project for the next couple minutes. Total mental silence starts... now!",
+        "Break time! Why not do a quick victory lap around the room? Get that blood flowing so we can crush the next block even harder!",
+        "I watched you stay focused that whole time, impressive! Go grab a quick snack, you've definitely earned the fuel. I’ll be right here.",
+        "Ding! Work mode: OFF. Relaxation mode: ON. Go do something that doesn't involve staring at a pixel. Your future self will thank you!",
+        "You're making incredible progress. Step away from the desk and just breathe for a moment. Shake out the tension in your shoulders. You were really locked in!",
+        "High five! That block is officially in the books. Go recharge your batteries for a few minutes so we can finish this goal strong!",
+        "We are so close to the finish line! Take this break to clear your head completely. When you come back, we’re going to knock out that last task together."
+      ];
+      speechBubble.textContent = phrases[Math.floor(Math.random() * phrases.length)];
+      speechBubble.style.display = 'block';
+      speechBubble.classList.remove('hiding');
+
+      yawnVideo.onended = () => {
+        yawnVideo.style.display = 'none';
+        idleVideo.style.display = 'block';
+        
+        // Hide bubble after video ends (with a slight delay or immediately)
+        bubbleTimeout = setTimeout(() => {
+          speechBubble.classList.add('hiding');
+          setTimeout(() => {
+            speechBubble.style.display = 'none';
+          }, 300);
+        }, 2000);
       };
     });
   </script>

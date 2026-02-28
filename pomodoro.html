@@ -554,6 +554,7 @@
           lblStatus.innerText = `Break (${repsLeft} left)`;
           lblTime.style.color = '#10b981'; // green for break
           if (document.body.classList.contains('mini-mode')) document.body.classList.add('break-mode');
+          ipcRenderer.send('pomodoro-break-start');
         } else {
           isWorking = true;
           totalTimeForPhase = parseInt(inPomo.value) * 60;
