@@ -9,6 +9,7 @@ let ninjaWin = null;
 let dockNinjaWin = null;
 let chatWin = null;
 let calendarWin = null;
+let blurWin = null;
 let savedQuestions = [];
 let savedExams = [];
 let currentStudyMaterial = ''; // Full text, available during session only
@@ -242,6 +243,7 @@ function createWindow() {
       nodeIntegration: true,
       contextIsolation: false,
     },
+    icon: path.join(__dirname, 'mov/cover.png'),
   });
 
   win.loadFile('index.html');
@@ -277,6 +279,7 @@ function createWindow() {
         nodeIntegration: true,
         contextIsolation: false,
       },
+      icon: path.join(__dirname, 'mov/cover.png'),
     });
     pomodoroWin.loadFile('pomodoro.html');
     pomodoroWin.on('closed', () => {
@@ -390,6 +393,7 @@ function createWindow() {
         nodeIntegration: true,
         contextIsolation: false,
       },
+      icon: path.join(__dirname, 'mov/cover.png'),
     });
 
     quizWin.loadFile('quiz.html');
@@ -436,6 +440,7 @@ function createWindow() {
         nodeIntegration: true,
         contextIsolation: false,
       },
+      icon: path.join(__dirname, 'mov/cover.png'),
     });
 
     ninjaWin.loadFile('ninja.html');
@@ -507,8 +512,8 @@ function createWindow() {
   });
 
   // === Dock Ninja (sits above dock) ===
-  const dockW = 220;
-  const dockH = 260;
+  const dockW = 120;
+  const dockH = 220;
   dockNinjaWin = new BrowserWindow({
     width: dockW,
     height: dockH,
@@ -525,7 +530,9 @@ function createWindow() {
       nodeIntegration: true,
       contextIsolation: false,
     },
+    icon: path.join(__dirname, 'mov/cover.png'),
   });
+  dockNinjaWin.setIgnoreMouseEvents(true, { forward: true });
   dockNinjaWin.loadFile('ninja-dock.html');
 
   // === Chat window ===
@@ -537,7 +544,7 @@ function createWindow() {
 
     const cw = 350;
     const ch = 450;
-    const dockX = Math.round((screenW - dockW) / 2);
+    const dockX = Math.round((screenW - 120) / 2);
 
     chatWin = new BrowserWindow({
       width: cw,
@@ -554,6 +561,7 @@ function createWindow() {
         nodeIntegration: true,
         contextIsolation: false,
       },
+      icon: path.join(__dirname, 'mov/cover.png'),
     });
 
     chatWin.loadFile('ninja-chat.html');
@@ -607,6 +615,19 @@ function createWindow() {
     }
   });
 
+  ipcMain.on('pomodoro-break-start', () => {
+    if (dockNinjaWin && !dockNinjaWin.isDestroyed()) {
+      dockNinjaWin.webContents.send('play-yawn');
+    }
+  });
+
+  ipcMain.on('set-ignore-mouse-events', (event, ignore, options) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win) {
+      win.setIgnoreMouseEvents(ignore, options);
+    }
+  });
+
   ipcMain.on('voice-add-exam', (_, params) => {
     // Save exam directly and open calendar
     const exams = loadExams();
@@ -636,10 +657,15 @@ function createWindow() {
 
       if (process.platform === 'darwin') {
         // macOS: use AppleScript to get frontmost app and browser URL
-        appName = execSync(
-          "osascript -e 'tell application \"System Events\" to name of first process whose frontmost is true'",
-          { encoding: 'utf-8', timeout: 3000 }
-        ).trim();
+        try {
+          appName = execSync(
+            "osascript -e 'tell application \"System Events\" to name of first process whose frontmost is true'",
+            { encoding: 'utf-8', timeout: 3000 }
+          ).trim();
+        } catch (e) {
+          console.error('Failed to get frontmost app:', e.message);
+          return { isDistracting: false, appName: null, url: null, site: null };
+        }
 
         if (appName.includes('Chrome') || appName.includes('Chromium')) {
           try {
@@ -676,8 +702,10 @@ function createWindow() {
         url.includes(site) || appName.toLowerCase().includes(site.split('.')[0])
       );
 
+      console.log(`[Distraction check] App: "${appName}", URL: "${url}", Match: ${matchedSite || 'none'}`);
       return { isDistracting: !!matchedSite, appName, url, site: matchedSite || null };
     } catch (e) {
+      console.error('[Distraction check] Error:', e.message);
       return { isDistracting: false, appName: null, url: null, site: null };
     }
   });
@@ -701,6 +729,54 @@ function createWindow() {
 
     if (dockNinjaWin && !dockNinjaWin.isDestroyed()) {
       dockNinjaWin.webContents.send('distraction-alert', message);
+    }
+
+    // Show fullscreen blur overlay
+    if (!blurWin || blurWin.isDestroyed()) {
+      const display = screen.getPrimaryDisplay();
+      const { width: sw, height: sh } = display.size;
+
+      blurWin = new BrowserWindow({
+        width: sw,
+        height: sh,
+        x: 0,
+        y: 0,
+        frame: false,
+        alwaysOnTop: true,
+        transparent: true,
+        hasShadow: false,
+        skipTaskbar: true,
+        resizable: false,
+        focusable: true,
+        vibrancy: 'under-window',
+        visualEffectState: 'active',
+        backgroundColor: '#00000000',
+        webPreferences: {
+          nodeIntegration: true,
+          contextIsolation: false,
+        },
+        icon: path.join(__dirname, 'mov/cover.png'),
+      });
+
+      blurWin.loadFile('blur-overlay.html');
+      blurWin.webContents.on('did-finish-load', () => {
+        blurWin.webContents.send('show-blur', message);
+      });
+      blurWin.on('closed', () => { blurWin = null; });
+
+      // Auto-close after 5 seconds (same as speech bubble)
+      setTimeout(() => {
+        if (blurWin && !blurWin.isDestroyed()) {
+          blurWin.webContents.send('auto-close');
+        }
+      }, 5000);
+    }
+  });
+
+  ipcMain.on('close-blur-overlay', () => {
+    if (blurWin && !blurWin.isDestroyed()) {
+      blurWin.close();
+      blurWin = null;
     }
   });
 
@@ -799,6 +875,7 @@ function createWindow() {
         nodeIntegration: true,
         contextIsolation: false,
       },
+      icon: path.join(__dirname, 'mov/cover.png'),
     });
 
     calendarWin.loadFile('calendar.html');
@@ -894,7 +971,12 @@ function animateTo(win, fromX, toX, fixedY, onDone) {
   animIntervals.set(id, interval);
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  if (process.platform === 'darwin') {
+    app.dock.setIcon(path.join(__dirname, 'mov/cover.png'));
+  }
+  createWindow();
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();

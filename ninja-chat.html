@@ -222,6 +222,31 @@
 
     let conversation = null;
     let conversationTranscript = [];
+    let autoCloseTimer = null;
+
+    const GOODBYE_PHRASES = [
+      'bye', 'goodbye', 'see you', 'see ya', 'later', 'good luck',
+      'happy studying', 'get to it', 'go study', 'go get', 'have fun',
+      'talk soon', 'catch you', 'take care'
+    ];
+
+    function scheduleAutoClose(delay = 3000) {
+      if (autoCloseTimer) clearTimeout(autoCloseTimer);
+      autoCloseTimer = setTimeout(async () => {
+        await saveTranscript();
+        if (conversation) {
+          await conversation.endSession();
+          conversation = null;
+        }
+        ipcRenderer.send('ninja-talking-state', 'idle');
+        ipcRenderer.send('close-ninja-chat');
+      }, delay);
+    }
+
+    function checkForGoodbye(text) {
+      const lower = text.toLowerCase();
+      return GOODBYE_PHRASES.some(phrase => lower.includes(phrase));
+    }
 
     function addMessage(text, sender) {
       // Check if last message is same sender — update it instead
@@ -274,6 +299,7 @@
                 breakDuration: params.break_duration || 5,
                 reps: params.reps || 4
               });
+              scheduleAutoClose(4000);
               return "Pomodoro timer started!";
             },
             stop_pomodoro: async () => {
@@ -289,6 +315,7 @@
             },
             start_quiz: async () => {
               ipcRenderer.send('voice-start-quiz');
+              scheduleAutoClose(4000);
               return "Starting a quiz!";
             }
           },
@@ -324,6 +351,9 @@
                 if (message.type === 'final') {
                   finalizeLastMessage('ninja');
                   conversationTranscript.push('Ninja: ' + message.message);
+                  if (checkForGoodbye(message.message)) {
+                    scheduleAutoClose(3000);
+                  }
                 }
               }
             }

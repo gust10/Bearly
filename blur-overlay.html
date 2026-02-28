@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Focus</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      height: 100%;
+      background: rgba(0, 0, 0, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      animation: fadeIn 0.4s ease-out;
+      overflow: hidden;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes fadeOut {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
+
+    body.hiding {
+      animation: fadeOut 0.3s ease-in forwards;
+    }
+
+    .message-box {
+      text-align: center;
+      color: white;
+      font-family: 'SF Pro Rounded', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      animation: scaleIn 0.4s ease-out;
+      z-index: 10;
+    }
+
+    @keyframes scaleIn {
+      from { opacity: 0; transform: scale(0.9) translateY(10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .msg-text {
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1.5;
+      max-width: 440px;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    }
+
+    .hint {
+      margin-top: 24px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.45);
+      letter-spacing: 0.5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="message-box">
+    <div class="msg-text" id="msgText">Stay focused!</div>
+    <div class="hint">click anywhere to dismiss</div>
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+
+    ipcRenderer.on('show-blur', (_, message) => {
+      document.getElementById('msgText').textContent = message;
+    });
+
+    document.body.addEventListener('click', () => {
+      document.body.classList.add('hiding');
+      setTimeout(() => {
+        ipcRenderer.send('close-blur-overlay');
+      }, 300);
+    });
+
+    ipcRenderer.on('auto-close', () => {
+      document.body.classList.add('hiding');
+      setTimeout(() => {
+        ipcRenderer.send('close-blur-overlay');
+      }, 300);
+    });
+  </script>
+</body>
+</html>
