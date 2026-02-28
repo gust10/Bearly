@@ -12,10 +12,11 @@ A desktop study companion built with Electron. Combines Pomodoro timers, active 
 ## Showcase
 
 Demo videos from the app (Ninja assistant animations and feedback):
+https://github.com/user-attachments/assets/2401e1c5-27b9-4a0f-b859-d0e6f58662c5
 
-| | |
-|---|---|---|
-|https://github.com/user-attachments/assets/89a540b0-e023-4328-8ced-29f656397c3b |https://github.com/user-attachments/assets/bc3da227-f5d0-4b71-8170-08369bb8bfda |https://github.com/user-attachments/assets/25ce9772-2f8a-4f03-be39-545e3fca450e |
+https://github.com/user-attachments/assets/ef36ce86-276b-4bf0-a7d3-120cb231ac48
+
+https://github.com/user-attachments/assets/dfdac504-eb3e-451b-b808-2330c5646b71
 
 ![Cover](mov/cover.png)
 
