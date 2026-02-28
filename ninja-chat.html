@@ -290,7 +290,9 @@
     async function startConversation() {
       try {
         const signedUrl = await ipcRenderer.invoke('get-signed-url');
+        console.log('[Voice] Got signed URL:', signedUrl ? 'yes' : 'no');
         const memoryContext = await ipcRenderer.invoke('get-learning-profile');
+        console.log('[Voice] Memory context length:', memoryContext ? memoryContext.length : 0);
 
         conversation = await Conversation.startSession({
           signedUrl,
@@ -336,6 +338,7 @@
           },
 
           onConnect: () => {
+            console.log('[Voice] Connected successfully');
             statusLabel.textContent = 'voice chat';
             micBtn.classList.remove('disconnected');
             micBtn.classList.add('listening');
@@ -343,7 +346,8 @@
             ipcRenderer.send('ninja-talking-state', 'listening');
           },
 
-          onDisconnect: () => {
+          onDisconnect: (reason) => {
+            console.log('[Voice] Disconnected, reason:', reason);
             statusLabel.textContent = 'disconnected';
             micBtn.classList.add('disconnected');
             micBtn.classList.remove('listening', 'speaking');
@@ -393,7 +397,7 @@
           },
 
           onError: (error) => {
-            console.error('Conversation error:', error);
+            console.error('[Voice] Conversation error:', error, JSON.stringify(error));
             modeText.textContent = 'Error occurred';
           },
         });
@@ -408,9 +412,139 @@
     document.getElementById('endBtn').addEventListener('click', () => doClose());
     document.getElementById('chatClose').addEventListener('click', () => doClose());
 
+    // Quiz mode conversation
+    async function startQuizConversation(questions) {
+      try {
+        const signedUrl = await ipcRenderer.invoke('get-signed-url');
+        console.log('[Voice Quiz] Starting with', questions.length, 'questions');
+
+        const questionsText = questions.map((q, i) =>
+          `Q${i + 1}: "${q.question}" → Answer: "${q.answer}"`
+        ).join('\n');
+
+        conversation = await Conversation.startSession({
+          signedUrl,
+          connectionType: 'websocket',
+          overrides: {
+            agent: {
+              prompt: {
+                prompt: `You are a cute, friendly study bear quiz master. You speak in a casual, encouraging way. Keep responses short (2-3 sentences max).
+
+You have the following quiz questions to ask the student. Ask them ONE AT A TIME:
+
+${questionsText}
+
+RULES:
+1. Start by saying hi and that you have ${questions.length} questions ready.
+2. Ask the first question clearly.
+3. After the student answers, carefully compare their answer to the CORRECT ANSWER provided above.
+4. If their answer is correct or mostly correct, praise them and confirm the key point.
+5. If their answer is WRONG or INCOMPLETE:
+   - Point out specifically what was wrong or missing in their answer.
+   - Read out the correct answer so they learn it.
+   - For example: "Not quite! You said X, but the correct answer is Y because..."
+6. If their answer is partially correct, acknowledge what they got right, then fill in what they missed.
+7. Then move to the next question.
+8. After all questions are done, give a score (e.g. "You got 3 out of 5!"), congratulate them, and say goodbye.
+9. Keep it fun and encouraging — use phrases like "nice job!", "almost!", "you got this!".
+10. Do NOT read the answer before the student responds.
+11. Do NOT ask all questions at once — one at a time only.
+12. Always reference the specific correct answer when giving feedback — don't just say "that's wrong", explain what the right answer is.`
+              }
+            }
+          },
+
+          clientTools: {
+            start_pomodoro: async (params) => {
+              ipcRenderer.send('voice-start-pomodoro', {
+                duration: params.duration || 25,
+                breakDuration: params.break_duration || 5,
+                reps: params.reps || 4
+              });
+              scheduleAutoClose(4000);
+              return "Pomodoro timer started!";
+            }
+          },
+
+          onConnect: () => {
+            console.log('[Voice Quiz] Connected');
+            statusLabel.textContent = 'quiz mode';
+            micBtn.classList.remove('disconnected');
+            micBtn.classList.add('listening');
+            modeText.textContent = 'Listening...';
+            ipcRenderer.send('ninja-talking-state', 'listening');
+          },
+
+          onDisconnect: (reason) => {
+            console.log('[Voice Quiz] Disconnected:', reason);
+            statusLabel.textContent = 'disconnected';
+            micBtn.classList.add('disconnected');
+            micBtn.classList.remove('listening', 'speaking');
+            modeText.textContent = 'Disconnected';
+            ipcRenderer.send('ninja-talking-state', 'idle');
+          },
+
+          onMessage: (message) => {
+            if (message.source === 'user') {
+              if (message.message) {
+                addMessage(message.message, 'user');
+                if (message.type === 'final') {
+                  finalizeLastMessage('user');
+                  conversationTranscript.push('Student: ' + message.message);
+                }
+              }
+            } else if (message.source === 'ai') {
+              if (message.message) {
+                addMessage(message.message, 'ninja');
+                if (message.type === 'final') {
+                  finalizeLastMessage('ninja');
+                  conversationTranscript.push('Bear: ' + message.message);
+                  if (checkForGoodbye(message.message)) {
+                    scheduleAutoClose(3000);
+                  }
+                }
+              }
+            }
+          },
+
+          onModeChange: (mode) => {
+            if (mode.mode === 'speaking') {
+              micBtn.classList.remove('listening');
+              micBtn.classList.add('speaking');
+              modeText.textContent = 'Bear is speaking...';
+              ipcRenderer.send('ninja-talking-state', 'speaking');
+            } else {
+              micBtn.classList.remove('speaking');
+              micBtn.classList.add('listening');
+              modeText.textContent = 'Listening...';
+              ipcRenderer.send('ninja-talking-state', 'listening');
+              if (shouldAutoClose) {
+                shouldAutoClose = false;
+                doClose();
+              }
+            }
+          },
+
+          onError: (error) => {
+            console.error('[Voice Quiz] Error:', error);
+            modeText.textContent = 'Error occurred';
+          },
+        });
+      } catch (err) {
+        console.error('[Voice Quiz] Failed to start:', err);
+        modeText.textContent = 'Failed to connect';
+        statusLabel.textContent = 'error';
+      }
+    }
+
     // Start when greeting is received
     ipcRenderer.on('ninja-greeting', () => {
       startConversation();
+    });
+
+    // Start quiz mode when questions are received
+    ipcRenderer.on('ninja-greeting-quiz', (_, questions) => {
+      startQuizConversation(questions);
     });
   </script>
 </body>

@@ -28,11 +28,11 @@ function initActiveRecall() {
     ipcRenderer.send('test-ninja');
   });
 
-  // Resume saved questions
+  // Resume saved questions — open voice quiz
   arResumeBtn.addEventListener('click', async () => {
     const saved = await ipcRenderer.invoke('get-saved-questions');
     if (saved && saved.length > 0) {
-      ipcRenderer.send('open-quiz', saved);
+      ipcRenderer.send('open-ninja-chat-quiz', saved);
     }
   });
 

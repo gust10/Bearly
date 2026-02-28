@@ -8,6 +8,7 @@ let quizWin = null;
 let ninjaWin = null;
 let dockNinjaWin = null;
 let chatWin = null;
+let voiceQuizQuestions = null;
 let calendarWin = null;
 let blurWin = null;
 let flashcardsWin = null;
@@ -598,6 +599,7 @@ function createWindow() {
     });
 
     chatWin.loadFile('ninja-chat.html');
+    chatWin.webContents.openDevTools({ mode: 'detach' });
     chatWin.webContents.on('did-finish-load', () => {
       chatWin.webContents.send('ninja-greeting');
     });
@@ -606,6 +608,45 @@ function createWindow() {
 
   ipcMain.on('close-ninja-chat', () => {
     if (chatWin && !chatWin.isDestroyed()) chatWin.close();
+  });
+
+  // Voice quiz mode — open chat with active recall questions
+  ipcMain.on('open-ninja-chat-quiz', (_, questions) => {
+    voiceQuizQuestions = questions;
+
+    if (chatWin && !chatWin.isDestroyed()) {
+      chatWin.webContents.send('ninja-greeting-quiz', questions);
+      chatWin.focus();
+      return;
+    }
+
+    const cw = 350;
+    const ch = 450;
+    const dockX = Math.round((screenW - 180) / 2);
+
+    chatWin = new BrowserWindow({
+      width: cw,
+      height: ch,
+      x: dockX + Math.round((dockW - cw) / 2),
+      y: workY + workHeight - dockH - ch - 10,
+      frame: false,
+      alwaysOnTop: true,
+      resizable: false,
+      movable: true,
+      transparent: true,
+      hasShadow: true,
+      webPreferences: {
+        nodeIntegration: true,
+        contextIsolation: false,
+      },
+      icon: path.join(__dirname, 'mov/cover.png'),
+    });
+
+    chatWin.loadFile('ninja-chat.html');
+    chatWin.webContents.on('did-finish-load', () => {
+      chatWin.webContents.send('ninja-greeting-quiz', questions);
+    });
+    chatWin.on('closed', () => { chatWin = null; voiceQuizQuestions = null; });
   });
 
   ipcMain.on('ninja-talking-state', (event, isTalking) => {
