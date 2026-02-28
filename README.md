@@ -15,8 +15,7 @@ Demo videos from the app (Ninja assistant animations and feedback):
 
 | | |
 |---|---|---|
-| **Thinking** | **Glasses** | **Angry** |
-| [thinking-bear.mov]https://github.com/user-attachments/assets/89a540b0-e023-4328-8ced-29f656397c3b | [glasses.mov]https://github.com/user-attachments/assets/bc3da227-f5d0-4b71-8170-08369bb8bfda | [angry.mp4]https://github.com/user-attachments/assets/25ce9772-2f8a-4f03-be39-545e3fca450e |
+|https://github.com/user-attachments/assets/89a540b0-e023-4328-8ced-29f656397c3b |https://github.com/user-attachments/assets/bc3da227-f5d0-4b71-8170-08369bb8bfda |https://github.com/user-attachments/assets/25ce9772-2f8a-4f03-be39-545e3fca450e |
 
 ![Cover](mov/cover.png)
 
