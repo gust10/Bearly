@@ -392,6 +392,7 @@ function createWindow() {
         nodeIntegration: true,
         contextIsolation: false,
       },
+      icon: path.join(__dirname, 'mov/cover.png'),
     });
 
     quizWin.loadFile('quiz.html');
@@ -438,6 +439,7 @@ function createWindow() {
         nodeIntegration: true,
         contextIsolation: false,
       },
+      icon: path.join(__dirname, 'mov/cover.png'),
     });
 
     ninjaWin.loadFile('ninja.html');
@@ -509,8 +511,8 @@ function createWindow() {
   });
 
   // === Dock Ninja (sits above dock) ===
-  const dockW = 220;
-  const dockH = 260;
+  const dockW = 120;
+  const dockH = 220;
   dockNinjaWin = new BrowserWindow({
     width: dockW,
     height: dockH,
@@ -527,7 +529,9 @@ function createWindow() {
       nodeIntegration: true,
       contextIsolation: false,
     },
+    icon: path.join(__dirname, 'mov/cover.png'),
   });
+  dockNinjaWin.setIgnoreMouseEvents(true, { forward: true });
   dockNinjaWin.loadFile('ninja-dock.html');
 
   // === Chat window ===
@@ -539,7 +543,7 @@ function createWindow() {
 
     const cw = 350;
     const ch = 450;
-    const dockX = Math.round((screenW - dockW) / 2);
+    const dockX = Math.round((screenW - 120) / 2);
 
     chatWin = new BrowserWindow({
       width: cw,
@@ -613,6 +617,13 @@ function createWindow() {
   ipcMain.on('pomodoro-break-start', () => {
     if (dockNinjaWin && !dockNinjaWin.isDestroyed()) {
       dockNinjaWin.webContents.send('play-yawn');
+    }
+  });
+
+  ipcMain.on('set-ignore-mouse-events', (event, ignore, options) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win) {
+      win.setIgnoreMouseEvents(ignore, options);
     }
   });
 
