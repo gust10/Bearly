@@ -219,46 +219,127 @@
   <div class="speech-bubble" id="speechBubble"></div>
   <div class="dock-ninja" id="dockNinja" style="display: none;"></div>
   
-  <div id="bearContainer" style="position: absolute; bottom: 0; left: 0; width: 120px; height: 120px; cursor: pointer;">
+  <div id="bearContainer" style="position: absolute; bottom: 0; left: 0; width: 180px; height: 180px; cursor: pointer;">
     <video id="idleVideo" src="mov/breathing.mov" loop muted autoplay style="width: 100%; height: 100%; object-fit: contain;"></video>
     <video id="bearVideo" src="mov/talking-bear.mov" loop muted autoplay style="display: none; width: 100%; height: 100%; object-fit: contain;"></video>
     <video id="scratchVideo" src="mov/scratch-head.mov" loop muted autoplay style="display: none; width: 100%; height: 100%; object-fit: contain;"></video>
     <video id="confettiVideo" src="mov/confetti.mov" muted playsinline style="display: none; width: 100%; height: 100%; object-fit: contain;"></video>
     <video id="yawnVideo" src="mov/yawn.mov" muted playsinline style="display: none; width: 100%; height: 100%; object-fit: contain;"></video>
+    <video id="danglingVideo" src="mov/dangling.mov" loop muted autoplay style="display: none; width: 100%; height: 100%; object-fit: contain;"></video>
+    <video id="bellyrubVideo" src="mov/bellyrub.mov" loop muted autoplay style="display: none; width: 100%; height: 100%; object-fit: contain;"></video>
   </div>
 
   <script>
     const { ipcRenderer } = require('electron');
 
-    const bearVideo = document.getElementById('bearVideo');
-    const idleVideo = document.getElementById('idleVideo');
-    const scratchVideo = document.getElementById('scratchVideo');
     const confettiVideo = document.getElementById('confettiVideo');
     const yawnVideo = document.getElementById('yawnVideo');
+    const danglingVideo = document.getElementById('danglingVideo');
+    const bellyrubVideo = document.getElementById('bellyrubVideo');
     const speechBubble = document.getElementById('speechBubble');
     const bearContainer = document.getElementById('bearContainer');
     let bubbleTimeout = null;
 
-    bearContainer.addEventListener('click', () => {
-      ipcRenderer.send('open-ninja-chat');
-    });
+    let isDragging = false;
+    let dragged = false;
+    let startX, startY;
 
-    bearContainer.addEventListener('mouseenter', () => {
+    bearContainer.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      dragged = false;
+      startX = e.screenX;
+      startY = e.screenY;
+      
+      // Get current window position
+      const winPos = require('electron').remote?.getCurrentWindow().getPosition() || [window.screenX, window.screenY];
+      // Note: remote is disabled, so we rely on screenX/screenY or just relative movement
+      // Actually, screenX/screenY in renderer are window-relative. 
+      // We'll use e.screenX/screenY which are absolute.
+      
+      // Since we can't easily get the window position directly in non-remote environment without IPC,
+      // we'll just track the delta.
+      
+      // Let's hide others and show dangling
+      hideAllVideos();
+      danglingVideo.style.display = 'block';
+      danglingVideo.play();
+      
+      // Disable click-through while dragging
       ipcRenderer.send('set-ignore-mouse-events', false);
     });
 
-    bearContainer.addEventListener('mouseleave', () => {
-      ipcRenderer.send('set-ignore-mouse-events', true, { forward: true });
+    window.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      
+      const dx = e.screenX - startX;
+      const dy = e.screenY - startY;
+      
+      if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
+        dragged = true;
+      }
+      
+      ipcRenderer.send('move-window', { dx, dy });
+      
+      startX = e.screenX;
+      startY = e.screenY;
     });
 
-    ipcRenderer.on('ninja-state', (event, state) => {
+    window.addEventListener('mouseup', () => {
+      if (!isDragging) return;
+      isDragging = false;
+      
+      danglingVideo.style.display = 'none';
+      idleVideo.style.display = 'block';
+      
+      // Do NOT set ignore-mouse-events back to true here.
+      // Let the mouseleave handler take care of it so the window remains interactive while hovered.
+    });
+
+    function hideAllVideos() {
       idleVideo.style.display = 'none';
       bearVideo.style.display = 'none';
       scratchVideo.style.display = 'none';
       confettiVideo.style.display = 'none';
       yawnVideo.style.display = 'none';
-      speechBubble.style.display = 'none';
-      if (bubbleTimeout) clearTimeout(bubbleTimeout);
+      danglingVideo.style.display = 'none';
+      bellyrubVideo.style.display = 'none';
+    }
+
+    bearContainer.addEventListener('click', () => {
+      if (dragged) return; // Don't click if we actually moved/dragged
+      ipcRenderer.send('open-ninja-chat');
+    });
+
+    let bellyRubTimer = null;
+
+    bearContainer.addEventListener('mouseenter', () => {
+      if (isDragging) return;
+      ipcRenderer.send('set-ignore-mouse-events', false);
+      
+      // Start 1s timer for belly rub
+      bellyRubTimer = setTimeout(() => {
+        hideAllVideos();
+        bellyrubVideo.style.display = 'block';
+        bellyrubVideo.play();
+      }, 1000);
+    });
+
+    bearContainer.addEventListener('mouseleave', () => {
+      if (isDragging) return;
+      ipcRenderer.send('set-ignore-mouse-events', true, { forward: true });
+      
+      if (bellyRubTimer) {
+        clearTimeout(bellyRubTimer);
+        bellyRubTimer = null;
+      }
+      
+      hideAllVideos();
+      idleVideo.style.display = 'block';
+    });
+
+    ipcRenderer.on('ninja-state', (event, state) => {
+      if (isDragging) return;
+      hideAllVideos();
 
       if (state === 'speaking') {
         bearVideo.style.display = 'block';
