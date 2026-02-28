@@ -263,6 +263,32 @@
           signedUrl,
           connectionType: 'websocket',
 
+          clientTools: {
+            start_pomodoro: async (params) => {
+              ipcRenderer.send('voice-start-pomodoro', {
+                duration: params.duration || 25,
+                breakDuration: params.break_duration || 5,
+                reps: params.reps || 4
+              });
+              return "Pomodoro timer started!";
+            },
+            stop_pomodoro: async () => {
+              ipcRenderer.send('voice-stop-pomodoro');
+              return "Timer stopped.";
+            },
+            add_exam: async (params) => {
+              ipcRenderer.send('voice-add-exam', {
+                subject: params.subject,
+                date: params.date
+              });
+              return `Exam for ${params.subject} added!`;
+            },
+            start_quiz: async () => {
+              ipcRenderer.send('voice-start-quiz');
+              return "Starting a quiz!";
+            }
+          },
+
           onConnect: () => {
             statusLabel.textContent = 'voice chat';
             micBtn.classList.remove('disconnected');

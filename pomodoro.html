@@ -639,6 +639,39 @@
     updateDisplay();
     renderTomatoes();
 
+    // Voice command: start pomodoro with params
+    ipcRenderer.on('voice-start-pomodoro', (_, params) => {
+      inPomo.value = params.duration || 25;
+      inBreak.value = params.breakDuration || 5;
+      inReps.value = params.reps || 4;
+
+      // Switch to timer view and start
+      switchView('viewTimer');
+      repsLeft = parseInt(inReps.value);
+      isWorking = true;
+      totalTimeForPhase = parseInt(inPomo.value) * 60;
+      timeLeft = totalTimeForPhase;
+      lblStatus.innerText = `Focus (${repsLeft} left)`;
+      lblTime.style.color = '#64748b';
+      updateDisplay();
+      renderTomatoes();
+
+      isRunning = true;
+      btnStart.dataset.state = 'resume';
+      setMiniMode(true);
+      timer = setInterval(tick, 1000);
+    });
+
+    // Voice command: stop/pause pomodoro
+    ipcRenderer.on('voice-stop-pomodoro', () => {
+      if (isRunning) {
+        isRunning = false;
+        clearInterval(timer);
+        lblStatus.innerText = 'Paused';
+        setMiniMode(false);
+      }
+    });
+
   </script>
 </body>
 </html>

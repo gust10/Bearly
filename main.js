@@ -413,6 +413,49 @@ function createWindow() {
     if (chatWin && !chatWin.isDestroyed()) chatWin.close();
   });
 
+  // === Voice client tool IPC handlers ===
+  ipcMain.on('voice-start-pomodoro', (_, params) => {
+    // Open pomodoro if not open, then send start command
+    if (!pomodoroWin || pomodoroWin.isDestroyed()) {
+      createPomodoroWindow();
+    }
+    // Wait for window to load, then send params
+    const sendStart = () => {
+      if (pomodoroWin && !pomodoroWin.isDestroyed()) {
+        pomodoroWin.webContents.send('voice-start-pomodoro', params);
+      }
+    };
+    if (pomodoroWin.webContents.isLoading()) {
+      pomodoroWin.webContents.on('did-finish-load', sendStart);
+    } else {
+      sendStart();
+    }
+  });
+
+  ipcMain.on('voice-stop-pomodoro', () => {
+    if (pomodoroWin && !pomodoroWin.isDestroyed()) {
+      pomodoroWin.webContents.send('voice-stop-pomodoro');
+    }
+  });
+
+  ipcMain.on('voice-add-exam', (_, params) => {
+    // Save exam directly and open calendar
+    const exams = loadExams();
+    exams.push({ subject: params.subject, date: params.date });
+    saveExams(exams);
+    // Open calendar to show the new exam
+    if (calendarWin && !calendarWin.isDestroyed()) {
+      calendarWin.webContents.send('exams-updated');
+    }
+  });
+
+  ipcMain.on('voice-start-quiz', () => {
+    const questions = loadQuestions();
+    if (questions.length > 0) {
+      openNinja(questions[Math.floor(Math.random() * questions.length)]);
+    }
+  });
+
   // ElevenLabs signed URL for voice conversation
   ipcMain.handle('get-signed-url', async () => {
     const res = await fetch(
