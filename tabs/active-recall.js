@@ -1,6 +1,6 @@
 const { ipcRenderer } = require('electron');
 
-const MINIMAX_API_KEY = 'sk-api-2Jjgnmytz_ZH7aiIl_0ICkmqSkgYXfWO35ck4atu3Ujcyjv0Bu9ZyUN3wOaBYJnjmkeKHqmath7wFUJKsxCmGMc01QE8tUcPnm_I3ulK_x3s4gMaMOcSLQA';
+const MINIMAX_API_KEY = process.env.MINIMAX_API_KEY;
 
 function initActiveRecall() {
   const arInputView = document.getElementById('ar-input-view');

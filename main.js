@@ -1,3 +1,4 @@
+require('dotenv').config();
 const { app, BrowserWindow, screen, ipcMain, dialog } = require('electron');
 const { execSync } = require('child_process');
 const path = require('path');
@@ -18,9 +19,9 @@ let savedExams = [];
 let currentStudyMaterial = ''; // Full text, available during session only
 let todayTasks = []; // Study tasks for today
 
-const MINIMAX_API_KEY = 'sk-api-2Jjgnmytz_ZH7aiIl_0ICkmqSkgYXfWO35ck4atu3Ujcyjv0Bu9ZyUN3wOaBYJnjmkeKHqmath7wFUJKsxCmGMc01QE8tUcPnm_I3ulK_x3s4gMaMOcSLQA';
-const ELEVENLABS_API_KEY = '508eba8b0541bcefd574168a49f09e2ea7debae855e9675eb826ce44d5db2ef6';
-const ELEVENLABS_AGENT_ID = 'agent_6601kjj54mwgf10rjmp88p06fecq';
+const MINIMAX_API_KEY = process.env.MINIMAX_API_KEY;
+const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
+const ELEVENLABS_AGENT_ID = process.env.ELEVENLABS_AGENT_ID;
 
 // Questions persistence
 function getQuestionsPath() {
@@ -599,7 +600,6 @@ function createWindow() {
     });
 
     chatWin.loadFile('ninja-chat.html');
-    chatWin.webContents.openDevTools({ mode: 'detach' });
     chatWin.webContents.on('did-finish-load', () => {
       chatWin.webContents.send('ninja-greeting');
     });

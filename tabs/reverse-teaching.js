@@ -1,7 +1,7 @@
 const { ipcRenderer } = require('electron');
 
 function initReverseTeaching() {
-  const MINIMAX_API_KEY = 'sk-api-PdXV6pPmAj9yASBU2aWZDPz7YMgdPq9r68zUKB-OuiyiRdlVlCsxYxiCw1untrVlMN8ojo4YFyGmyVhuroAJnGFNGAbf_s9clvK3D4MQJv658EdEH3aWsN0';
+  const MINIMAX_API_KEY = process.env.MINIMAX_API_KEY_ALT;
   let currentTopic = '';
   let studyMaterial = ''; // Full source text for context
   let chatHistory = [];
