@@ -4,6 +4,14 @@ AI Study Buddy is a persistent desktop-based AI companion that remains visually 
  
 Unlike traditional AI tools that operate as separate applications, this solution integrates directly into the study environment. The AI is accessible in real time while the user reads, writes, reviews, or studies.
 
+CleverCub makes you smarter by making you teach it first—then targets your gaps with precision practice. Built in under 24 hours, it is an AI tool that measures understanding, not just answers; converts weak spots into wins using Feynman‑style active recall.
+
+Differentiators:
+Teach‑the‑AI workflow: you explain; it diagnoses.
+Gap taxonomy: conceptual vs procedural vs calculation and more.
+Adaptive drills: right difficulty, right format, right moment.
+Anti‑distraction design: short, satisfying loops; focus‑friendly UI.
+
 The core objective is to transform passive studying into an active, structured, and reflective learning process.
 
 ## Showcase
