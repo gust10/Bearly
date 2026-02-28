@@ -15,6 +15,8 @@ Bearly fixes that. It is a persistent desktop AI companion that sits on top of y
 | Flashcards are tedious to make | One click generates AI flashcards from your study session |
 | Pomodoro apps don't stop you opening YouTube | Built-in distraction detection nudges you back in real time |
 | Study tools live in a separate tab you have to switch to | Bearly stays on-screen, above your work, always one glance away |
+| No one helps you plan *how* to study | Voice AI structures your session around your goals and schedule |
+| Study tools ignore how you're actually feeling | Bearly reads your mood and adapts its tone and approach accordingly |
 
 ## Features
 
@@ -27,6 +29,8 @@ Bearly fixes that. It is a persistent desktop AI companion that sits on top of y
   - AI-generate flashcards from any Reverse Teaching session using MiniMax
   - All cards stored persistently in `flashcards.json`
 - **Study Assistant** — AI study buddy that:
+  - Has conversations to **plan and structure your study session** around your goals
+  - **Reads your mood** and adapts its tone, pace, and suggestions accordingly
   - Pops up random questions every 10 minutes during study sessions
   - Voice chat powered by ElevenLabs
   - Detects distractions (nudges you when visiting YouTube, social media, etc.)
