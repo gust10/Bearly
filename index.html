@@ -16,7 +16,7 @@
     </div>
 
     <nav class="nav" id="mainNav">
-      <button class="nav-item active" data-tab="pomodoro">
+      <button class="nav-item active" data-tab="pomodoro" id="btnPomodoro">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         Pomodoro
       </button>
@@ -100,13 +100,20 @@
 
     navItems.forEach(item => {
       item.addEventListener('click', () => {
+        const tabName = item.dataset.tab;
+        if (!tabName) return; // For the Upload PDF button which has no data-tab
+
         navItems.forEach(n => n.classList.remove('active'));
         contentPanels.forEach(c => c.classList.remove('active'));
         item.classList.add('active');
 
-        const tabName = item.dataset.tab;
         const contentEl = document.getElementById('content-' + tabName);
         if (contentEl) contentEl.classList.add('active');
+
+        // Pomodoro Window Toggle
+        if (tabName === 'pomodoro') {
+          ipcRenderer.send('toggle-pomodoro');
+        }
 
         // Reverse Teaching specific initial view setting
         if (tabName === 'reverse-teaching' && window.showScreen) {
