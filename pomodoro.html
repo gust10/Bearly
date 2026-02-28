@@ -237,12 +237,28 @@
       justify-content: center;
       opacity: 0;
       z-index: 10;
-      background: rgba(255,255,255,0.9);
+      background: transparent;
       color: #64748b;
-      border: 1px solid #ddd;
+      border: none;
       margin: 0; /* ensure no margin interferes with centering */
     }
     .mini-mode .controls:hover .btn-pause {
+      opacity: 1;
+    }
+    
+    .hover-time-display {
+      position: absolute;
+      bottom: -15px; /* Moved to the bottom of the tomato */
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 14px;
+      font-weight: 700;
+      color: #8b5cf6;
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: none;
+    }
+    .mini-mode .controls:hover .hover-time-display {
       opacity: 1;
     }
     
@@ -396,6 +412,7 @@
               <path d="M12 2L13 5L16 4L14 7L17 8L14 9L15 12L12 10L9 12L10 9L7 8L10 7L8 4L11 5L12 2Z"/>
             </svg>
           </div>
+          <div class="hover-time-display" id="hoverTimeDisplay">25:00</div>
         </div>
         <button class="btn btn-start" id="btnStart" data-state="start">
           <svg id="svgStart" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
@@ -417,6 +434,7 @@
     let isRunning = false;
 
     const lblTime = document.getElementById('timeDisplay');
+    const hoverTimeDisplay = document.getElementById('hoverTimeDisplay');
     const lblStatus = document.getElementById('statusText');
     const inPomo = document.getElementById('inPomo');
     const inBreak = document.getElementById('inBreak');
@@ -486,6 +504,7 @@
       const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
       const s = (timeLeft % 60).toString().padStart(2, '0');
       lblTime.innerText = `${m}:${s}`;
+      if (hoverTimeDisplay) hoverTimeDisplay.innerText = `${m}:${s}`;
       
       if (totalTimeForPhase > 0) {
         const elapsed = totalTimeForPhase - timeLeft;
