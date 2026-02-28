@@ -218,11 +218,14 @@
 </head>
   <div class="speech-bubble" id="speechBubble"></div>
   <div class="dock-ninja" id="dockNinja" style="display: none;"></div>
-  <video id="idleVideo" src="mov/breathing.mov" loop muted autoplay style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 140px; height: 140px; object-fit: contain;"></video>
-  <video id="bearVideo" src="mov/talking-bear.mov" loop muted autoplay style="display: none; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 140px; height: 140px; object-fit: contain;"></video>
-  <video id="scratchVideo" src="mov/scratch-head.mov" loop muted autoplay style="display: none; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 140px; height: 140px; object-fit: contain;"></video>
-  <video id="confettiVideo" src="mov/confetti.mov" muted playsinline style="display: none; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 140px; height: 140px; object-fit: contain;"></video>
-  <video id="yawnVideo" src="mov/yawn.mov" muted playsinline style="display: none; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 140px; height: 140px; object-fit: contain;"></video>
+  
+  <div id="bearContainer" style="position: absolute; bottom: 0; left: 0; width: 120px; height: 120px; cursor: pointer;">
+    <video id="idleVideo" src="mov/breathing.mov" loop muted autoplay style="width: 100%; height: 100%; object-fit: contain;"></video>
+    <video id="bearVideo" src="mov/talking-bear.mov" loop muted autoplay style="display: none; width: 100%; height: 100%; object-fit: contain;"></video>
+    <video id="scratchVideo" src="mov/scratch-head.mov" loop muted autoplay style="display: none; width: 100%; height: 100%; object-fit: contain;"></video>
+    <video id="confettiVideo" src="mov/confetti.mov" muted playsinline style="display: none; width: 100%; height: 100%; object-fit: contain;"></video>
+    <video id="yawnVideo" src="mov/yawn.mov" muted playsinline style="display: none; width: 100%; height: 100%; object-fit: contain;"></video>
+  </div>
 
   <script>
     const { ipcRenderer } = require('electron');
@@ -233,10 +236,19 @@
     const confettiVideo = document.getElementById('confettiVideo');
     const yawnVideo = document.getElementById('yawnVideo');
     const speechBubble = document.getElementById('speechBubble');
+    const bearContainer = document.getElementById('bearContainer');
     let bubbleTimeout = null;
 
-    document.body.addEventListener('click', () => {
+    bearContainer.addEventListener('click', () => {
       ipcRenderer.send('open-ninja-chat');
+    });
+
+    bearContainer.addEventListener('mouseenter', () => {
+      ipcRenderer.send('set-ignore-mouse-events', false);
+    });
+
+    bearContainer.addEventListener('mouseleave', () => {
+      ipcRenderer.send('set-ignore-mouse-events', true, { forward: true });
     });
 
     ipcRenderer.on('ninja-state', (event, state) => {
