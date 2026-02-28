@@ -243,6 +243,7 @@ function createWindow() {
       nodeIntegration: true,
       contextIsolation: false,
     },
+    icon: path.join(__dirname, 'mov/cover.png'),
   });
 
   win.loadFile('index.html');
@@ -278,6 +279,7 @@ function createWindow() {
         nodeIntegration: true,
         contextIsolation: false,
       },
+      icon: path.join(__dirname, 'mov/cover.png'),
     });
     pomodoroWin.loadFile('pomodoro.html');
     pomodoroWin.on('closed', () => {
@@ -555,6 +557,7 @@ function createWindow() {
         nodeIntegration: true,
         contextIsolation: false,
       },
+      icon: path.join(__dirname, 'mov/cover.png'),
     });
 
     chatWin.loadFile('ninja-chat.html');
@@ -605,6 +608,12 @@ function createWindow() {
   ipcMain.on('pomodoro-finished', () => {
     if (dockNinjaWin && !dockNinjaWin.isDestroyed()) {
       dockNinjaWin.webContents.send('play-confetti');
+    }
+  });
+
+  ipcMain.on('pomodoro-break-start', () => {
+    if (dockNinjaWin && !dockNinjaWin.isDestroyed()) {
+      dockNinjaWin.webContents.send('play-yawn');
     }
   });
 
@@ -854,6 +863,7 @@ function createWindow() {
         nodeIntegration: true,
         contextIsolation: false,
       },
+      icon: path.join(__dirname, 'mov/cover.png'),
     });
 
     calendarWin.loadFile('calendar.html');
@@ -949,7 +959,12 @@ function animateTo(win, fromX, toX, fixedY, onDone) {
   animIntervals.set(id, interval);
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  if (process.platform === 'darwin') {
+    app.dock.setIcon(path.join(__dirname, 'mov/cover.png'));
+  }
+  createWindow();
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
