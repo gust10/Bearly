@@ -420,8 +420,8 @@ function createWindow() {
       return;
     }
 
-    const nw = 280;
-    const nh = 380;
+    const nw = 420;
+    const nh = 570;
     const startX = screenW; // start off-screen right
 
     ninjaWin = new BrowserWindow({
@@ -455,7 +455,7 @@ function createWindow() {
     if (!ninjaWin || ninjaWin.isDestroyed()) return;
     ninjaWin.show();
     const [x, y] = ninjaWin.getPosition();
-    const targetX = screenW - 290;
+    const targetX = screenW - 430;
     animateTo(ninjaWin, x, targetX, y);
   }
 
@@ -512,12 +512,12 @@ function createWindow() {
   });
 
   // === Dock Ninja (sits above dock) ===
-  const dockW = 120;
-  const dockH = 220;
+  const dockW = 180;
+  const dockH = 300;
   dockNinjaWin = new BrowserWindow({
     width: dockW,
     height: dockH,
-    x: Math.round((screenW - dockW) / 2),
+    x: screenW - dockW - 20,
     y: workY + workHeight - dockH,
     frame: false,
     alwaysOnTop: true,
@@ -544,7 +544,7 @@ function createWindow() {
 
     const cw = 350;
     const ch = 450;
-    const dockX = Math.round((screenW - 120) / 2);
+    const dockX = Math.round((screenW - 180) / 2);
 
     chatWin = new BrowserWindow({
       width: cw,
@@ -625,6 +625,14 @@ function createWindow() {
     const win = BrowserWindow.fromWebContents(event.sender);
     if (win) {
       win.setIgnoreMouseEvents(ignore, options);
+    }
+  });
+
+  ipcMain.on('move-window', (event, { dx, dy }) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win) {
+      const [x, y] = win.getPosition();
+      win.setPosition(Math.round(x + dx), Math.round(y + dy));
     }
   });
 
