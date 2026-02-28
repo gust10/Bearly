@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Quiz</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: transparent;
+    }
+
+    .quiz-overlay {
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.98);
+      border-radius: 16px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .quiz-titlebar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      -webkit-app-region: drag;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .quiz-titlebar h3 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #8b5cf6;
+    }
+
+    .quiz-close {
+      -webkit-app-region: no-drag;
+      background: none;
+      border: none;
+      color: #ccc;
+      cursor: pointer;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .quiz-close:hover { background: #fee2e2; color: #f87171; }
+
+    .quiz-body {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .q-card {
+      background: linear-gradient(135deg, #faf5ff, #fce7f3);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .q-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: #c4b5fd;
+      margin-bottom: 8px;
+    }
+
+    .q-text {
+      font-size: 15px;
+      line-height: 1.6;
+      color: #4a4a5a;
+    }
+
+    .q-input {
+      width: 100%;
+      border: 1.5px solid #e8e8e8;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      color: #4a4a5a;
+      margin-bottom: 12px;
+      transition: border-color 0.2s;
+    }
+
+    .q-input:focus { border-color: #c4b5fd; }
+
+    .q-reveal-btn {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #e8a0bf, #c4b5fd);
+      color: white;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .q-reveal-btn:hover { opacity: 0.85; }
+
+    .q-answer-card {
+      background: #f0fdf4;
+      border-radius: 14px;
+      padding: 16px;
+      margin-top: 12px;
+      display: none;
+    }
+
+    .q-answer-card.show { display: block; }
+
+    .q-answer-card .q-label { color: #86efac; }
+
+    .q-answer-card p {
+      font-size: 13px;
+      line-height: 1.6;
+      color: #4a4a5a;
+    }
+
+    .q-nav {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .q-nav-btn {
+      flex: 1;
+      padding: 9px;
+      border: 1.5px solid #e8e8e8;
+      border-radius: 10px;
+      background: white;
+      color: #999;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .q-nav-btn:hover { border-color: #c4b5fd; color: #8b5cf6; }
+
+    .q-progress {
+      font-size: 11px;
+      color: #ccc;
+      text-align: center;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="quiz-overlay">
+    <div class="quiz-titlebar">
+      <h3>Active Recall</h3>
+      <button class="quiz-close" id="quizClose">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div class="quiz-body">
+      <div class="q-card">
+        <div class="q-label">Question <span id="qNum"></span></div>
+        <div class="q-text" id="qText"></div>
+      </div>
+
+      <input type="text" class="q-input" id="qInput" placeholder="Type your answer...">
+      <button class="q-reveal-btn" id="qRevealBtn">Reveal Answer</button>
+
+      <div class="q-answer-card" id="qAnswer">
+        <div class="q-label">Answer</div>
+        <p id="qAnswerText"></p>
+      </div>
+
+      <div class="q-nav">
+        <button class="q-nav-btn" id="qPrev">Prev</button>
+        <button class="q-nav-btn" id="qNext">Next</button>
+      </div>
+      <div class="q-progress" id="qProgress"></div>
+    </div>
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+
+    let questions = [];
+    let currentIdx = 0;
+
+    const qText = document.getElementById('qText');
+    const qAnswerText = document.getElementById('qAnswerText');
+    const qAnswer = document.getElementById('qAnswer');
+    const qInput = document.getElementById('qInput');
+    const qNum = document.getElementById('qNum');
+    const qProgress = document.getElementById('qProgress');
+
+    function showQuestion() {
+      const q = questions[currentIdx];
+      qText.textContent = q.question;
+      qAnswerText.textContent = q.answer;
+      qNum.textContent = `${currentIdx + 1}/${questions.length}`;
+      qProgress.textContent = `${currentIdx + 1} of ${questions.length}`;
+      qInput.value = '';
+      qAnswer.classList.remove('show');
+    }
+
+    ipcRenderer.on('load-questions', (event, qs) => {
+      questions = qs;
+      currentIdx = 0;
+      showQuestion();
+    });
+
+    document.getElementById('quizClose').addEventListener('click', () => {
+      ipcRenderer.send('close-quiz');
+    });
+
+    document.getElementById('qRevealBtn').addEventListener('click', () => {
+      qAnswer.classList.toggle('show');
+    });
+
+    document.getElementById('qPrev').addEventListener('click', () => {
+      if (currentIdx > 0) { currentIdx--; showQuestion(); }
+    });
+
+    document.getElementById('qNext').addEventListener('click', () => {
+      if (currentIdx < questions.length - 1) { currentIdx++; showQuestion(); }
+    });
+  </script>
+</body>
+</html>
