@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Ninja Recall</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      font-family: 'SF Pro Rounded', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: transparent;
+      overflow: hidden;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100%;
+      padding: 10px;
+    }
+
+    /* Speech bubble */
+    .bubble {
+      background: rgba(255, 255, 255, 0.97);
+      border-radius: 16px;
+      padding: 16px;
+      width: 100%;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      position: relative;
+      margin-bottom: 8px;
+    }
+
+    .bubble::after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-left: 10px solid transparent;
+      border-right: 10px solid transparent;
+      border-top: 10px solid rgba(255, 255, 255, 0.97);
+    }
+
+    .bubble-label {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: #c4b5fd;
+      margin-bottom: 6px;
+    }
+
+    .bubble-question {
+      font-size: 13px;
+      line-height: 1.5;
+      color: #4a4a5a;
+    }
+
+    .bubble-input {
+      width: 100%;
+      border: 1.5px solid #e8e8e8;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 12px;
+      font-family: inherit;
+      outline: none;
+      color: #4a4a5a;
+      margin-top: 10px;
+    }
+
+    .bubble-input:focus { border-color: #c4b5fd; }
+
+    .bubble-reveal-btn {
+      width: 100%;
+      margin-top: 8px;
+      padding: 8px;
+      border: none;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #e8a0bf, #c4b5fd);
+      color: white;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .bubble-reveal-btn:hover { opacity: 0.85; }
+
+    .bubble-answer {
+      background: #f0fdf4;
+      border-radius: 8px;
+      padding: 10px;
+      margin-top: 8px;
+      display: none;
+      font-size: 12px;
+      line-height: 1.5;
+      color: #4a4a5a;
+    }
+
+    .bubble-answer.show { display: block; }
+
+    .bubble-dismiss {
+      width: 100%;
+      margin-top: 6px;
+      padding: 6px;
+      border: 1px solid #e8e8e8;
+      border-radius: 8px;
+      background: white;
+      color: #999;
+      font-size: 10px;
+      cursor: pointer;
+    }
+
+    .bubble-dismiss:hover { border-color: #c4b5fd; color: #8b5cf6; }
+
+    /* Ninja character */
+    .ninja {
+      position: relative;
+      width: 80px;
+      height: 100px;
+      flex-shrink: 0;
+    }
+
+    /* Head */
+    .ninja-head {
+      width: 50px;
+      height: 50px;
+      background: #2d2d2d;
+      border-radius: 50%;
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2;
+    }
+
+    /* Headband */
+    .ninja-headband {
+      position: absolute;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 54px;
+      height: 10px;
+      background: #f87171;
+      border-radius: 3px;
+      z-index: 3;
+    }
+
+    /* Headband tails */
+    .ninja-headband::after {
+      content: '';
+      position: absolute;
+      right: -12px;
+      top: 1px;
+      width: 14px;
+      height: 6px;
+      background: #f87171;
+      border-radius: 0 4px 4px 0;
+      transform: rotate(15deg);
+    }
+
+    .ninja-headband::before {
+      content: '';
+      position: absolute;
+      right: -18px;
+      top: 6px;
+      width: 12px;
+      height: 5px;
+      background: #ef4444;
+      border-radius: 0 4px 4px 0;
+      transform: rotate(25deg);
+    }
+
+    /* Eyes */
+    .ninja-eyes {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+      z-index: 4;
+    }
+
+    .ninja-eye {
+      width: 8px;
+      height: 6px;
+      background: white;
+      border-radius: 50%;
+      position: relative;
+    }
+
+    .ninja-eye::after {
+      content: '';
+      width: 4px;
+      height: 4px;
+      background: #1a1a1a;
+      border-radius: 50%;
+      position: absolute;
+      top: 1px;
+      left: 2px;
+    }
+
+    /* Body */
+    .ninja-body {
+      width: 36px;
+      height: 35px;
+      background: #2d2d2d;
+      border-radius: 8px 8px 6px 6px;
+      position: absolute;
+      top: 42px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1;
+    }
+
+    /* Belt */
+    .ninja-belt {
+      position: absolute;
+      top: 58px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 38px;
+      height: 6px;
+      background: #8b5cf6;
+      border-radius: 2px;
+      z-index: 2;
+    }
+
+    /* Arms */
+    .ninja-arm-l, .ninja-arm-r {
+      width: 10px;
+      height: 22px;
+      background: #2d2d2d;
+      border-radius: 5px;
+      position: absolute;
+      top: 46px;
+      z-index: 0;
+    }
+
+    .ninja-arm-l {
+      left: 11px;
+      transform: rotate(10deg);
+    }
+
+    .ninja-arm-r {
+      right: 11px;
+      transform: rotate(-10deg);
+      animation: wave 1.5s ease-in-out infinite;
+    }
+
+    @keyframes wave {
+      0%, 100% { transform: rotate(-10deg); }
+      50% { transform: rotate(-30deg); }
+    }
+
+    /* Legs */
+    .ninja-leg-l, .ninja-leg-r {
+      width: 12px;
+      height: 18px;
+      background: #2d2d2d;
+      border-radius: 4px 4px 6px 6px;
+      position: absolute;
+      top: 72px;
+      z-index: 0;
+    }
+
+    .ninja-leg-l { left: 24px; }
+    .ninja-leg-r { right: 24px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="bubble">
+      <div class="bubble-label">Ninja asks...</div>
+      <div class="bubble-question" id="nQuestion"></div>
+      <input type="text" class="bubble-input" id="nInput" placeholder="Your answer...">
+      <button class="bubble-reveal-btn" id="nRevealBtn">Reveal Answer</button>
+      <div class="bubble-answer" id="nAnswer"></div>
+      <button class="bubble-dismiss" id="nDismiss">Got it!</button>
+    </div>
+
+    <div class="ninja">
+      <div class="ninja-head"></div>
+      <div class="ninja-headband"></div>
+      <div class="ninja-eyes">
+        <div class="ninja-eye"></div>
+        <div class="ninja-eye"></div>
+      </div>
+      <div class="ninja-body"></div>
+      <div class="ninja-belt"></div>
+      <div class="ninja-arm-l"></div>
+      <div class="ninja-arm-r"></div>
+      <div class="ninja-leg-l"></div>
+      <div class="ninja-leg-r"></div>
+    </div>
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+
+    const nQuestion = document.getElementById('nQuestion');
+    const nAnswer = document.getElementById('nAnswer');
+    const nInput = document.getElementById('nInput');
+
+    ipcRenderer.on('load-question', (event, q) => {
+      nQuestion.textContent = q.question;
+      nAnswer.textContent = q.answer;
+      nInput.value = '';
+      document.getElementById('nAnswer').classList.remove('show');
+    });
+
+    document.getElementById('nRevealBtn').addEventListener('click', () => {
+      document.getElementById('nAnswer').classList.toggle('show');
+    });
+
+    document.getElementById('nDismiss').addEventListener('click', () => {
+      ipcRenderer.send('dismiss-ninja');
+    });
+  </script>
+</body>
+</html>

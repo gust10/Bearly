@@ -1,0 +1,237 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  font-family: 'SF Pro Rounded', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: transparent;
+  color: #4a4a5a;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: rgba(255, 255, 255, 0.97);
+  border-right: 1px solid #eee;
+  overflow: hidden;
+  transition: opacity 0.3s;
+}
+
+.peek-line {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
+  background: linear-gradient(180deg, #e8a0bf 0%, #c4b5fd 50%, #e8a0bf 100%);
+  border-radius: 0 3px 3px 0;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+.peek-line.visible { opacity: 1; }
+
+.titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  -webkit-app-region: drag;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.titlebar h2 {
+  font-size: 14px;
+  font-weight: 700;
+  color: #e8a0bf;
+  letter-spacing: 0.5px;
+}
+
+.close-btn {
+  -webkit-app-region: no-drag;
+  background: none;
+  border: none;
+  color: #ccc;
+  cursor: pointer;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.close-btn:hover { background: #fee2e2; color: #f87171; }
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 8px;
+  gap: 4px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: #999;
+  font-size: 13px;
+  font-weight: 500;
+  width: 100%;
+  text-align: left;
+  border-radius: 10px;
+  transition: all 0.2s;
+}
+
+.nav-item:hover { background: #faf5ff; color: #7c6a9a; }
+.nav-item.active { background: linear-gradient(135deg, #fce7f3, #ede9fe); color: #8b5cf6; }
+.nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+.nav-item.active svg { stroke: #c084fc; }
+
+/* Content area for features */
+.content {
+  flex: 1;
+  padding: 14px;
+  overflow-y: auto;
+  display: none;
+}
+
+.content.active { display: flex; flex-direction: column; }
+
+/* Active Recall styles */
+.ar-textarea {
+  width: 100%;
+  height: 100px;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 12px;
+  font-family: inherit;
+  resize: none;
+  outline: none;
+  color: #4a4a5a;
+  transition: border-color 0.2s;
+}
+
+.ar-textarea:focus { border-color: #c4b5fd; }
+
+.ar-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #e8a0bf, #c4b5fd);
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.ar-btn:hover { opacity: 0.85; }
+.ar-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.ar-question-card {
+  background: #faf5ff;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 10px;
+}
+
+.ar-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #c4b5fd;
+  margin-bottom: 6px;
+}
+
+.ar-question-text {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #4a4a5a;
+}
+
+.ar-answer-input {
+  width: 100%;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+  color: #4a4a5a;
+  margin-top: 8px;
+}
+
+.ar-answer-input:focus { border-color: #c4b5fd; }
+
+.ar-reveal {
+  background: #f0fdf4;
+  border-radius: 10px;
+  padding: 12px;
+  margin-top: 8px;
+  display: none;
+}
+
+.ar-reveal.show { display: block; }
+.ar-reveal .ar-label { color: #86efac; }
+
+.ar-reveal p {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #4a4a5a;
+}
+
+.ar-nav-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.ar-nav-btn {
+  flex: 1;
+  padding: 7px;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  background: white;
+  color: #999;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ar-nav-btn:hover { border-color: #c4b5fd; color: #8b5cf6; }
+
+.ar-progress {
+  font-size: 11px;
+  color: #ccc;
+  text-align: center;
+  margin-top: 6px;
+}
+
+.ar-loading {
+  text-align: center;
+  padding: 20px;
+  color: #c4b5fd;
+  font-size: 12px;
+}
+
+.ar-loading .dots::after {
+  content: '';
+  animation: dots 1.5s steps(4) infinite;
+}
+
+@keyframes dots {
+  0% { content: ''; }
+  25% { content: '.'; }
+  50% { content: '..'; }
+  75% { content: '...'; }
+}
