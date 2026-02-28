@@ -22,10 +22,12 @@ function initReverseTeaching() {
     if (mainNav) mainNav.style.display = 'none';
     screens.forEach(s => s.classList.remove('active'));
     document.getElementById(screenId).classList.add('active');
-    if (screenId !== 'feedbackScreen') {
+    if (screenId === 'topicScreen') {
       ipcRenderer.send('set-window-height', 250);
-    } else {
-      ipcRenderer.send('set-window-height', 400);
+    } else if (screenId === 'explanationScreen') {
+      ipcRenderer.send('set-window-height', 330);
+    } else { // feedbackScreen
+      ipcRenderer.send('set-window-height', 570);
     }
   };
 
@@ -33,7 +35,7 @@ function initReverseTeaching() {
     if (mainNav) mainNav.style.display = 'flex';
     screens.forEach(s => s.classList.remove('active'));
     if (chatInputArea) chatInputArea.style.display = 'none';
-    ipcRenderer.send('set-window-height', 250);
+    ipcRenderer.send('set-window-height', 500);
   };
 
   function appendMessage(role, text) {
@@ -42,14 +44,6 @@ function initReverseTeaching() {
     msgDiv.textContent = text;
     feedbackContent.appendChild(msgDiv);
     feedbackContent.scrollTop = feedbackContent.scrollHeight;
-    
-    // Resize window
-    setTimeout(() => {
-      const appPanel = document.getElementById('appPanel');
-      const contentHeight = appPanel.scrollHeight;
-      const newHeight = Math.min(600, Math.max(250, contentHeight + 20));
-      ipcRenderer.send('set-window-height', newHeight);
-    }, 50);
   }
 
   function filterResponse(text) {

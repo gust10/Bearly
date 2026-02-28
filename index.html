@@ -122,13 +122,15 @@
         // Pomodoro Window Toggle
         if (tabName === 'pomodoro') {
           ipcRenderer.send('toggle-pomodoro');
+        } else {
+          ipcRenderer.send('close-pomodoro');
         }
 
         // Reverse Teaching specific initial view setting
         if (tabName === 'reverse-teaching' && window.showScreen) {
           window.showScreen('topicScreen');
         } else {
-          ipcRenderer.send('set-window-height', 250);
+          ipcRenderer.send('set-window-height', 500);
         }
       });
     });

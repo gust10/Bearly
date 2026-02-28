@@ -319,8 +319,12 @@
   <div class="app" id="appFrame">
     <!-- Options Screen -->
     <div class="view-screen active" id="viewOptions">
-      <div class="titlebar">
+      <div class="titlebar" style="justify-content: space-between;">
+        <div style="width: 20px;"></div>
         <h2>pomodoro menu</h2>
+        <button id="btnClosePomodoro" style="background: none; border: none; color: #ccc; cursor: pointer; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; outline: none; padding: 0;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
       </div>
       
       <button class="option-btn" id="btnGoPlanner">
@@ -421,6 +425,13 @@
     const btnStart = document.getElementById('btnStart');
     const btnPause = document.getElementById('btnPause');
     const btnReset = document.getElementById('btnReset');
+    const btnClosePomodoro = document.getElementById('btnClosePomodoro');
+
+    if (btnClosePomodoro) {
+      btnClosePomodoro.addEventListener('click', () => {
+        ipcRenderer.send('close-pomodoro');
+      });
+    }
 
     const viewOptions = document.getElementById('viewOptions');
     const viewPlanner = document.getElementById('viewPlanner');

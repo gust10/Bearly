@@ -342,7 +342,8 @@ textarea:focus, input[type="text"]:focus {
   font-size: 12px;
   line-height: 1.5;
   color: #5b21b6;
-  flex: 1;
+  flex: none; /* remove flex stretch */
+  height: 250px; /* fixed shorter height */
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -475,17 +476,20 @@ textarea:focus, input[type="text"]:focus {
 }
 
 .back-btn {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  background: none;
-  border: none;
-  color: #999;
-  cursor: pointer;
   display: flex;
   align-items: center;
   gap: 4px;
   font-size: 11px;
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  align-self: flex-start;
+  margin-bottom: 2px;
+}
+#content-reverse-teaching {
+  overflow-y: hidden;
+  padding-right: 8px;
 }
 
 .back-btn svg {

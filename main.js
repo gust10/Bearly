@@ -142,6 +142,13 @@ function createWindow() {
     togglePomodoro();
   });
 
+  ipcMain.on('close-pomodoro', () => {
+    if (pomodoroWin && !pomodoroWin.isDestroyed()) {
+      pomodoroWin.close();
+      pomodoroWin = null;
+    }
+  });
+
   ipcMain.on('resize-pomodoro', (event, mode) => {
     pomodoroMode = mode;
     if (pomodoroWin && !pomodoroWin.isDestroyed()) {
