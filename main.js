@@ -79,12 +79,9 @@ function createWindow() {
     resetTimer();
   });
 
-  ipcMain.on('dragging', () => {
-    if (hideTimeout) clearTimeout(hideTimeout);
-  });
-
-  ipcMain.on('drag-end', () => {
-    resetTimer();
+  ipcMain.on('set-window-height', (event, newHeight) => {
+    const [width] = win.getSize();
+    win.setSize(width, newHeight, true);
   });
 
   // Start the auto-hide timer
