@@ -1,10 +1,12 @@
 # <img src="mov/cover.png" width="120" align="center" style="border-radius:12px"/> Bearly
 
+*A cognitive-science-backed desktop AI that turns passive studying into a personalised metacognitive loop.*
+
 **Most students study longer, not smarter.** They re-read notes, watch lectures on 2x speed, and convince themselves they understand — until the exam.
 
 Bearly fixes that. It is a persistent desktop AI companion that sits on top of your workspace and forces active engagement with the material: you explain concepts, get diagnosed on your gaps, and drill the exact things you don't know — all without leaving your document. And unlike any other study tool, **it remembers you** — building a hyper-personalised learning profile that gets smarter with every session.
 
-> **The result:** research-proven outcomes — less passive re-reading, better long-term retention, and fewer surprises on exam day.
+> **The result:** a metacognitive study loop that builds genuine understanding, not just exam confidence.
 
 ## Why Bearly?
 
