@@ -172,6 +172,7 @@
   <video id="idleVideo" src="mov/breathing.mov" loop muted autoplay style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 140px; height: 140px; object-fit: contain;"></video>
   <video id="bearVideo" src="mov/talking-bear.mov" loop muted autoplay style="display: none; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 140px; height: 140px; object-fit: contain;"></video>
   <video id="scratchVideo" src="mov/scratch-head.mov" loop muted autoplay style="display: none; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 140px; height: 140px; object-fit: contain;"></video>
+  <video id="confettiVideo" src="mov/confetti.mov" muted playsinline style="display: none; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 140px; height: 140px; object-fit: contain;"></video>
 
   <script>
     const { ipcRenderer } = require('electron');
@@ -179,6 +180,7 @@
     const bearVideo = document.getElementById('bearVideo');
     const idleVideo = document.getElementById('idleVideo');
     const scratchVideo = document.getElementById('scratchVideo');
+    const confettiVideo = document.getElementById('confettiVideo');
 
     document.body.addEventListener('click', () => {
       ipcRenderer.send('open-ninja-chat');
@@ -188,6 +190,7 @@
       idleVideo.style.display = 'none';
       bearVideo.style.display = 'none';
       scratchVideo.style.display = 'none';
+      confettiVideo.style.display = 'none';
 
       if (state === 'speaking') {
         bearVideo.style.display = 'block';
@@ -196,6 +199,21 @@
       } else { // idle
         idleVideo.style.display = 'block';
       }
+    });
+
+    ipcRenderer.on('play-confetti', () => {
+      idleVideo.style.display = 'none';
+      bearVideo.style.display = 'none';
+      scratchVideo.style.display = 'none';
+      
+      confettiVideo.style.display = 'block';
+      confettiVideo.currentTime = 0;
+      confettiVideo.play();
+      
+      confettiVideo.onended = () => {
+        confettiVideo.style.display = 'none';
+        idleVideo.style.display = 'block';
+      };
     });
   </script>
 </body>

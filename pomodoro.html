@@ -225,7 +225,7 @@
     }
     .mini-mode .btn-pause {
       position: absolute;
-      top: 50%;
+      top: 58%;
       left: 50%;
       transform: translate(-50%, -50%);
       border-radius: 50%;
@@ -253,7 +253,8 @@
       transform: translateX(-50%);
       font-size: 14px;
       font-weight: 700;
-      color: #8b5cf6;
+      color: #e8a0bf;
+      text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
       opacity: 0;
       transition: opacity 0.2s;
       pointer-events: none;
@@ -543,6 +544,7 @@
             setMiniMode(false);
             btnStart.dataset.state = 'start';
             document.getElementById('svgStart').innerHTML = '<polygon points="5 3 19 12 5 21 5 3"></polygon>';
+            ipcRenderer.send('pomodoro-finished');
             return;
           }
           isWorking = false;
@@ -622,11 +624,18 @@
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         svg.setAttribute('viewBox', '0 0 24 24');
         svg.setAttribute('class', i < activeCount ? 'tomato-icon active' : 'tomato-icon');
+        svg.style.cursor = 'pointer';
         // Dual-path tomato: body (fills currentColor) and stem (fixed green)
         svg.innerHTML = `
           <path fill="currentColor" d="M12 5C7.3 5 3.5 8.5 3.5 13c0 4.5 3.8 8.5 8.5 8.5h0.1c4.7 0 8.5-4 8.5-8.5 0-4.5-3.8-8-8.5-8z"/>
           <path class="tomato-stem" fill="currentColor" d="M12,2c0.4,1.4,1.6,2.4,3,2.4c-1.4,0-2.6,1-2.6,2.4c-0.4-1.4-1.6-2.4-3-2.4C10.8,4.4,12,3.4,12,2z"/>
         `;
+        svg.addEventListener('click', () => {
+          if (!isRunning) {
+            inReps.value = i + 1;
+            renderTomatoes(i + 1);
+          }
+        });
         tomatoesContainer.appendChild(svg);
       }
     }

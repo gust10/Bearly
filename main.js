@@ -447,6 +447,12 @@ function createWindow() {
     }
   });
 
+  ipcMain.on('pomodoro-finished', () => {
+    if (dockNinjaWin && !dockNinjaWin.isDestroyed()) {
+      dockNinjaWin.webContents.send('play-confetti');
+    }
+  });
+
   ipcMain.on('voice-add-exam', (_, params) => {
     // Save exam directly and open calendar
     const exams = loadExams();
