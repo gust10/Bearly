@@ -1,10 +1,10 @@
-# studyyyy
+# Bearly
 **Project Overview:**
-AI Study Buddy is a persistent desktop-based AI companion that remains visually present on top of a user’s document workspace. It functions as an interactive academic assistant and behavioral productivity system.
+Bearly is a persistent desktop-based AI companion that remains visually present on top of a user’s document workspace. It functions as an interactive academic assistant and behavioral productivity system.
  
 Unlike traditional AI tools that operate as separate applications, this solution integrates directly into the study environment. The AI is accessible in real time while the user reads, writes, reviews, or studies.
 
-CleverCub makes you smarter by making you teach it first—then targets your gaps with precision practice. Built in under 24 hours, it is an AI tool that measures understanding, not just answers; converts weak spots into wins using Feynman‑style active recall.
+Bearly makes you smarter by making you teach it first—then targets your gaps with precision practice. Built in under 24 hours, it is an AI tool that measures understanding, not just answers; converts weak spots into wins using Feynman‑style active recall.
 
 ## Differentiators:
 * Teach‑the‑AI workflow: you explain; it diagnoses.
