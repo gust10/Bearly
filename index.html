@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Studyyyy</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      font-family: 'SF Pro Rounded', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: transparent;
+      color: #4a4a5a;
+    }
+
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      background: rgba(255, 255, 255, 0.97);
+      border-right: 1px solid #eee;
+      border-radius: 0;
+      overflow: hidden;
+      transition: opacity 0.3s;
+    }
+
+    /* Peek line visible when hidden */
+    .peek-line {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 6px;
+      height: 100%;
+      background: linear-gradient(180deg, #e8a0bf 0%, #c4b5fd 50%, #e8a0bf 100%);
+      border-radius: 0 3px 3px 0;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+
+    .peek-line.visible {
+      opacity: 1;
+    }
+
+    .titlebar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      -webkit-app-region: drag;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .titlebar h2 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #e8a0bf;
+      letter-spacing: 0.5px;
+    }
+
+    .close-btn {
+      -webkit-app-region: no-drag;
+      background: none;
+      border: none;
+      color: #ccc;
+      cursor: pointer;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .close-btn:hover {
+      background: #fee2e2;
+      color: #f87171;
+    }
+
+    .nav {
+      display: flex;
+      flex-direction: column;
+      padding: 8px 8px;
+      gap: 4px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: #999;
+      font-size: 13px;
+      font-weight: 500;
+      width: 100%;
+      text-align: left;
+      border-radius: 10px;
+      transition: all 0.2s;
+    }
+
+    .nav-item:hover {
+      background: #faf5ff;
+      color: #7c6a9a;
+    }
+
+    .nav-item.active {
+      background: linear-gradient(135deg, #fce7f3, #ede9fe);
+      color: #8b5cf6;
+    }
+
+    .nav-item svg {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+
+    .nav-item.active svg {
+      stroke: #c084fc;
+    }
+  </style>
+</head>
+<body>
+  <div class="peek-line" id="peekLine"></div>
+  <div class="app" id="appPanel">
+    <div class="titlebar">
+      <h2>studyyyy</h2>
+      <button class="close-btn" id="closeBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <nav class="nav">
+      <button class="nav-item active" data-tab="pomodoro">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Pomodoro
+      </button>
+      <button class="nav-item" data-tab="active-recall">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 017 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 01-2 2h-4a2 2 0 01-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 017-7z"/><line x1="9" y1="21" x2="15" y2="21"/></svg>
+        Active Recall
+      </button>
+      <button class="nav-item" data-tab="reverse-teaching">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        Reverse Teaching
+      </button>
+      <button class="nav-item" data-tab="flashcards">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        Flashcards
+      </button>
+    </nav>
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+    const appPanel = document.getElementById('appPanel');
+    const peekLine = document.getElementById('peekLine');
+
+    // Close button
+    document.getElementById('closeBtn').addEventListener('click', () => {
+      window.close();
+    });
+
+    // Tab navigation
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+      item.addEventListener('click', () => {
+        navItems.forEach(n => n.classList.remove('active'));
+        item.classList.add('active');
+      });
+    });
+
+    // Mouse enter/leave for auto-hide
+    document.body.addEventListener('mouseenter', () => {
+      ipcRenderer.send('mouse-enter');
+    });
+
+    document.body.addEventListener('mouseleave', () => {
+      ipcRenderer.send('mouse-leave');
+    });
+
+    // Show/hide peek line
+    ipcRenderer.on('hidden-state', (event, isHidden) => {
+      if (isHidden) {
+        peekLine.classList.add('visible');
+        appPanel.style.opacity = '0';
+      } else {
+        peekLine.classList.remove('visible');
+        appPanel.style.opacity = '1';
+      }
+    });
+  </script>
+</body>
+</html>
