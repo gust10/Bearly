@@ -1,13 +1,16 @@
 <div id="mainContent">
-  <!-- Screen 1: Topic Input -->
+  <!-- Screen 1: Material Input -->
   <div class="screen" id="topicScreen">
     <button class="back-btn" onclick="showNav()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg> Back
     </button>
-    <div class="screen-title" style="margin-top: 15px;">Please enter the topic you would like to explain:</div>
+    <div class="screen-title" style="margin-top: 15px;">Paste your study material or upload a PDF:</div>
     <div class="input-group">
-      <input type="text" id="topicInput" placeholder="e.g. Photosynthesis">
-      <button class="primary-btn" id="submitTopicBtn">Next</button>
+      <textarea id="topicInput" rows="4" placeholder="Paste your notes, textbook excerpt, or study material here..." style="width: 100%; resize: none; font-family: inherit; font-size: 12px; padding: 8px; border: 1px solid #e2e8f0; border-radius: 8px;"></textarea>
+      <div style="display: flex; gap: 8px;">
+        <button class="secondary-btn" id="rtUploadPdfBtn" style="flex: 1;">Upload PDF</button>
+        <button class="primary-btn" id="submitTopicBtn" style="flex: 1;">Next</button>
+      </div>
     </div>
   </div>
 
@@ -16,9 +19,9 @@
     <button class="back-btn" onclick="showScreen('topicScreen')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg> Back
     </button>
-    <div class="screen-title" style="margin-top: 15px;">Now, please explain everything you know about this topic:</div>
+    <div class="screen-title" style="margin-top: 15px;">Now explain what you understood from the material:</div>
     <div class="input-group">
-      <textarea id="explanationInput" rows="5" placeholder="Your explanation..."></textarea>
+      <textarea id="explanationInput" rows="5" placeholder="Explain the key concepts in your own words..."></textarea>
       <button class="primary-btn" id="submitExplanationBtn">Submit</button>
     </div>
   </div>

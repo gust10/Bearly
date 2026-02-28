@@ -3,6 +3,7 @@ const { ipcRenderer } = require('electron');
 function initReverseTeaching() {
   const MINIMAX_API_KEY = 'sk-api-PdXV6pPmAj9yASBU2aWZDPz7YMgdPq9r68zUKB-OuiyiRdlVlCsxYxiCw1untrVlMN8ojo4YFyGmyVhuroAJnGFNGAbf_s9clvK3D4MQJv658EdEH3aWsN0';
   let currentTopic = '';
+  let studyMaterial = ''; // Full source text for context
   let chatHistory = [];
 
   const mainNav = document.getElementById('mainNav');
@@ -23,7 +24,7 @@ function initReverseTeaching() {
     screens.forEach(s => s.classList.remove('active'));
     document.getElementById(screenId).classList.add('active');
     if (screenId === 'topicScreen') {
-      ipcRenderer.send('set-window-height', 250);
+      ipcRenderer.send('set-window-height', 330);
     } else if (screenId === 'explanationScreen') {
       ipcRenderer.send('set-window-height', 330);
     } else { // feedbackScreen
@@ -51,9 +52,19 @@ function initReverseTeaching() {
   }
 
   document.getElementById('submitTopicBtn').addEventListener('click', () => {
-    currentTopic = topicInput.value.trim();
-    if (currentTopic) {
+    studyMaterial = topicInput.value.trim();
+    if (studyMaterial) {
+      // Extract a short topic label from the first line or first 50 chars
+      currentTopic = studyMaterial.split('\n')[0].substring(0, 50);
+      ipcRenderer.send('set-study-material', studyMaterial);
       window.showScreen('explanationScreen');
+    }
+  });
+
+  document.getElementById('rtUploadPdfBtn').addEventListener('click', async () => {
+    const text = await ipcRenderer.invoke('pick-pdf');
+    if (text) {
+      topicInput.value = text;
     }
   });
 
@@ -72,7 +83,7 @@ function initReverseTeaching() {
           messages: [
             {
               role: 'system',
-              content: "Evaluate the user's explanation of the topic they provided. If the explanation is mostly correct or close to being correct, respond in a supportive tone without giving lengthy feedback. Only provide detailed feedback if the user’s answer is missing critical information or if their explanation contains major errors. At the end of your response, ask the user if they would like to continue discussing the current topic or if they would prefer to explore a new topic. Be sure to keep your tone friendly, supportive, and encouraging, even when pointing out areas for improvement. IMPORTANT: OUTPUT ONLY THE DIRECT RESPONSE. DO NOT INCLUDE <think> TAGS, XML TAGS, INTERNAL THOUGHTS, OR ANY METADATA. GENERALLY KEEP RESPONSES BRIEF."
+              content: `You are evaluating a student's understanding of study material. Compare their explanation against the original source material provided below. If the explanation is mostly correct, respond supportively. If they missed critical information or made errors, point out what they missed and explain the correct concepts. Keep your tone friendly and encouraging. Ask if they want to discuss further or try explaining another part. IMPORTANT: OUTPUT ONLY THE DIRECT RESPONSE. NO <think> TAGS OR METADATA. KEEP RESPONSES BRIEF.\n\n--- ORIGINAL STUDY MATERIAL ---\n${studyMaterial.substring(0, 4000)}\n--- END MATERIAL ---`
             },
             ...chatHistory
           ]
@@ -113,7 +124,7 @@ function initReverseTeaching() {
 
     window.showScreen('feedbackScreen');
     feedbackContent.innerHTML = '';
-    chatHistory = [{ role: 'user', content: `Topic: ${currentTopic}\nExplanation: ${explanation}` }];
+    chatHistory = [{ role: 'user', content: `My explanation of the material:\n${explanation}` }];
 
     // Log to learning memory
     ipcRenderer.send('save-study-event', {
