@@ -1,16 +1,31 @@
 {
-  "name": "studyyyy",
+  "name": "bearly",
   "version": "1.0.0",
-  "description": "",
+  "description": "Study companion app with voice assistant",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "build": "electron-builder --mac dmg"
+  },
+  "build": {
+    "appId": "com.bearly.app",
+    "productName": "Bearly",
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.education"
+    },
+    "files": [
+      "**/*",
+      "!.git/**",
+      "!.claude/**"
+    ]
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "electron": "^40.6.1"
+    "electron": "^40.6.1",
+    "electron-builder": "^26.8.1"
   },
   "dependencies": {
     "@elevenlabs/client": "^0.15.0",
